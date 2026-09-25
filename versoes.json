@@ -1,0 +1,25 @@
+{
+  "app": "rootify-one",
+  "versoes": [
+    {
+      "versao": "0.1.0",
+      "data": "2026-09-25",
+      "itens": {
+        "pt": [
+          "Primeira versão: painel, apps, planos, serviços por plano, CRM de usuários, suporte com prazos, base de conhecimento.",
+          "Termos com aprovação por outra pessoa, recados, anúncios, versões e publicação no GitHub (ou pacote zip).",
+          "Papéis e permissões com simulador, equipe, LGPD, log encadeado, integrações, automações, custos.",
+          "Cofre cifrado com entrada por digital, PIN ou senha e bloqueio automático.",
+          "Tudo o que ainda falta especificar aparece em cinza, com a pergunta que falta responder."
+        ],
+        "en": [
+          "First release: dashboard, apps, plans, services by plan, user CRM, support with deadlines, knowledge base.",
+          "Terms with approval by someone else, notices, ads, versions and publishing to GitHub (or zip package).",
+          "Roles and permissions with simulator, team, LGPD, chained log, integrations, automations, costs.",
+          "Encrypted vault with sign-in by fingerprint, PIN or password and auto-lock.",
+          "Everything still needing a spec shows in grey, with the question still to answer."
+        ]
+      }
+    }
+  ]
+}
