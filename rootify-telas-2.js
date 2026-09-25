@@ -826,7 +826,14 @@
       podeEd ? el('div', { class: 'rf-acoes' }, [ui.botao(T('Salvar', 'Save'), function () {
         var antes = { dono: cfg.github.dono, repo: cfg.github.repo, ramo: cfg.github.ramo, token: cfg.github.token ? '(guardado)' : '' };
         cfg.github.dono = dono.value.trim(); cfg.github.repo = repo.value.trim(); cfg.github.ramo = ramo.value.trim() || 'main';
-        if (token.value.trim()) cfg.github.token = token.value.trim();
+        /* tira espaços e quebras de linha que vêm junto ao copiar, e confere o formato */
+        var novo = token.value.replace(/\s+/g, '');
+        if (novo) {
+          if (!/^(github_pat_|ghp_)[A-Za-z0-9_]{30,}$/.test(novo)) {
+            return ui.aviso(T('Isso não parece um token do GitHub: ele começa com github_pat_ e é bem comprido. Copie de novo pelo ícone de copiar ao lado do token.', 'This does not look like a GitHub token: it starts with github_pat_ and is quite long. Copy it again with the copy icon next to the token.'), 'erro');
+          }
+          cfg.github.token = novo;
+        }
         RF.mudar('config', 'integracoes', 'github', cfg.github.repo, antes, { dono: cfg.github.dono, repo: cfg.github.repo, ramo: cfg.github.ramo, token: cfg.github.token ? '(guardado)' : '' }, T('Configuração do GitHub salva (token cifrado)', 'GitHub settings saved (token encrypted)'))
           .then(function () { ui.aviso(T('Salvo.', 'Saved.')); RF.renderizar(); });
       }, 'pri'), ui.botao(T('Testar conexão', 'Test connection'), function () {
@@ -835,7 +842,9 @@
         fetch('https://api.github.com/repos/' + encodeURIComponent(cfg.github.dono) + '/' + encodeURIComponent(cfg.github.repo), { headers: { Authorization: 'Bearer ' + cfg.github.token, Accept: 'application/vnd.github+json' } })
           .then(function (r) { return r.json().then(function (j) { return { r: r, j: j }; }); })
           .then(function (x) {
-            if (!x.r.ok) { teste.textContent = '⛔ ' + (x.r.status === 404 ? T('Repositório não encontrado ou token sem acesso a ele.', 'Repository not found or token without access.') : 'GitHub ' + x.r.status + ': ' + (x.j.message || '')); return; }
+            if (!x.r.ok) { teste.textContent = '⛔ ' + (x.r.status === 404 ? T('Repositório não encontrado ou token sem acesso a ele. Confira o nome do repositório e, no token, "Only select repositories" com solverone-dados.', 'Repository not found or token without access. Check the repository name and, in the token, "Only select repositories" with solverone-dados.')
+              : x.r.status === 401 ? T('O GitHub não reconheceu o token (401). Ele foi copiado incompleto, foi apagado ou venceu. Gere um token novo, toque em Apagar token, cole o novo e Salvar.', 'GitHub did not recognise the token (401). It was copied incomplete, deleted or expired. Generate a new token, tap Delete token, paste the new one and Save.')
+              : 'GitHub ' + x.r.status + ': ' + (x.j.message || '')); return; }
             var p = x.j.permissions || {};
             teste.textContent = (p.push ? '✓ ' + T('Conectado com permissão de escrita em ', 'Connected with write permission on ') : '⚠ ' + T('Conectado, mas SEM permissão de escrita em ', 'Connected, but WITHOUT write permission on ')) + x.j.full_name;
           }).catch(function () { teste.textContent = '⛔ ' + T('Sem conexão com o GitHub (internet ou página aberta fora do https).', 'No connection to GitHub (internet, or page opened outside https).'); });

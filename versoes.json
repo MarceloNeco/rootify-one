@@ -2,6 +2,18 @@
   "app": "rootify-one",
   "versoes": [
     {
+      "versao": "0.1.2",
+      "data": "2026-09-25",
+      "itens": {
+        "pt": [
+          "Token do GitHub: tira sozinho espaços e quebras de linha copiados junto, avisa se o texto colado não é um token e explica o erro 401 em português."
+        ],
+        "en": [
+          "GitHub token: strips spaces and line breaks copied along, warns when the pasted text is not a token, and explains error 401 in plain words."
+        ]
+      }
+    },
+    {
       "versao": "0.1.1",
       "data": "2026-09-25",
       "itens": {
