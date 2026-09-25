@@ -321,3 +321,8 @@ tr.rf-clicavel:hover td, tr.rf-clicavel:focus td { background: var(--acento-suav
 .rf-ag-ok { color: var(--ok); }
 .rf-ag-erro { color: var(--er); }
 .rf-ag-inicio, .rf-ag-fim { font-weight: 600; }
+.rf-faixa-atencao { background: var(--at-f); border-color: var(--at); }
+.rf-ia-incluir { border: 1px solid var(--linha); border-radius: .5rem; padding: .5rem .75rem; margin: 0 0 .75rem; display: grid; gap: .25rem; grid-template-columns: 1fr; }
+@media (min-width: 720px) { .rf-ia-incluir { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.rf-ia-incluir legend { font-weight: 600; padding: 0 .25rem; }
+.rf-hist { margin: 1rem 0; } .rf-hist summary { cursor: pointer; font-weight: 600; padding: .4rem 0; }

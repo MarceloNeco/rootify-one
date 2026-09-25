@@ -2,6 +2,25 @@
   "app": "rootify-one",
   "versoes": [
     {
+      "versao": "0.1.10",
+      "data": "2026-09-25",
+      "hora": "18:00:26",
+      "itens": {
+        "pt": [
+          "Termos: o assistente de IA virou um quadro próprio abaixo do texto. Ele lê o que já está escrito e remodela conforme o perfil: o que fazer (reescrever, completar só o que falta, do zero, conferir, traduzir, livre), tipo de documento, tom (simples, jurídico com leis, amigável, objetivo, fiel para tradução), público, tamanho e itens a incluir (leis, disclaimer, direitos do titular, DPO, vigência, cookies, IA, PI, crianças, segurança). A proposta abre num modal com Inserir abaixo · Substituir · Descartar.",
+          "Termos: histórico de textos por versão (quem, quando, o que aconteceu, texto anterior), com Ver e Restaurar — e tudo também no log de auditoria.",
+          "Termos: ao devolver para rascunho, o motivo aparece em destaque no topo do termo, na coluna Devoluções e como selo ↩ devolvido na lista.",
+          "Cofre de chaves: guia acompanhado, um passo por vez, com “Abrir o site ao lado” (janela separada — os sites não permitem abrir dentro de outra página), “Já fiz, próximo” e o passo guardado até terminar (mesmo depois de F5)."
+        ],
+        "en": [
+          "Terms: the AI assistant is now its own panel below the text. It reads what is written and reshapes it by profile: what to do (rewrite, complete only what is missing, from scratch, check, translate, free), document type, tone (plain, legal with statutes, friendly, concise, translation-friendly), audience, length and items to include (laws, disclaimer, data-subject rights, DPO, effective date, cookies, AI, IP, children, security). The proposal opens in a modal with Insert below · Replace · Discard.",
+          "Terms: text history per version (who, when, what happened, previous text) with View and Restore — also in the audit log.",
+          "Terms: when returned to draft, the reason shows highlighted at the top of the term, in the Returns column and as a ↩ returned badge in the list.",
+          "Key vault: guided walkthrough, one step at a time, with “Open the site beside” (separate window — the sites do not allow embedding), “Done, next” and the current step remembered until finished (even after F5)."
+        ]
+      }
+    },
+    {
       "versao": "0.1.9",
       "data": "2026-09-25",
       "hora": "16:25:28",

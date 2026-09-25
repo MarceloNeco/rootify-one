@@ -21,7 +21,7 @@
 (function (raiz) {
   'use strict';
 
-  var VERSAO = '1.1.0';
+  var VERSAO = '1.1.1';
   if (raiz.DGO && raiz.DGO.__carregado) { return; }
 
   /* ------------------------------------------------------------------
@@ -343,6 +343,12 @@
       '.dgo-campo{position:relative;}',
       '.dgo-olho{position:absolute;right:6px;bottom:6px;width:34px;height:34px;border:0;border-radius:8px;background:transparent;color:#94a3b8;cursor:pointer;font-size:16px;}',
       '.dgo-usar{flex-wrap:wrap;}.dgo-usar .dgo-b{width:auto;flex:1 1 auto;}',
+      '.dgo-passo{border:2px solid var(--dgo-cor);border-radius:12px;padding:10px 12px;margin:10px 0;background:rgba(255,255,255,.04);}',
+      '.dgo-passo-cab{display:flex;align-items:center;gap:10px;margin-bottom:6px;font-size:13px;}',
+      '.dgo-passo-barra{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.12);overflow:hidden;}',
+      '.dgo-passo-barra span{display:block;height:100%;background:var(--dgo-cor);}',
+      '.dgo-passo-txt{font-size:15px;line-height:1.45;margin:4px 0 8px;color:#fff;}',
+      '.dgo-passo .dgo-guia-ilu{max-width:360px;}',
       '.dgo-b.dgo-b2.dgo-on{border-color:var(--dgo-cor);color:var(--dgo-cor);}',
       '@media (prefers-color-scheme:light){.dgo-guia-ilu svg{filter:none;}}',
       '.dgo-caixa select{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;',
@@ -668,6 +674,14 @@
                   'No internet right now. The rest of the app keeps working.'],
     cofreChaves: ['Chaves de IA', 'AI keys'],
     tudo: ['Tudo', 'All'],
+    passo: ['Passo', 'Step'],
+    de: ['de', 'of'],
+    abrirAoLado: ['Abrir o site ao lado', 'Open the site beside'],
+    anterior: ['Anterior', 'Previous'],
+    jaFiz: ['Já fiz, próximo', 'Done, next'],
+    sairGuia: ['Sair do guia', 'Leave the guide'],
+    comecarGuia: ['Começar o guia acompanhado (um passo por vez)', 'Start the guided walkthrough (one step at a time)'],
+    colarAbaixo: ['Agora cole a chave no campo abaixo e toque em “Salvar e testar”.', 'Now paste the key in the field below and tap “Save and test”.'],
     emUsoAgora: ['Em uso agora', 'In use now'],
     limitesTit: ['Limites', 'Limits'],
     contaTit: ['Conta', 'Account'],
@@ -4663,6 +4677,21 @@
     var aberto = provedorAberto || '';
     var filtro = capInicial || Guardar.ler('ia-cofre-filtro', '', true) || '';
     if (aberto && !PROVEDORES[aberto]) aberto = '';
+    /* guia acompanhado: um passo por vez, com "ja fiz, proximo"; o passo atual fica guardado */
+    var guia = Guardar.ler('ia-guia', {}, true) || {};
+    function guiaDefinir(p, n) { if (n === null || n === undefined) delete guia[p]; else guia[p] = n; Guardar.gravar('ia-guia', guia, true); }
+    function emGuiaDe(p) { var pr = PROVEDORES[p]; return !!(pr.passos && pr.passos.length > 1 && guia[p] !== undefined && !pr.semChave); }
+    var janelaGuia = null;
+    function abrirAoLado(pr, p) {
+      /* os sites dos provedores nao deixam ser mostrados dentro de outra pagina (X-Frame-Options),
+         entao a saida e uma janela separada, colocada ao lado desta */
+      var w = raiz.screen && raiz.screen.availWidth || 1200, h = raiz.screen && raiz.screen.availHeight || 800;
+      var largura = Math.max(420, Math.round(w * 0.5)), esquerda = Math.max(0, w - largura);
+      try {
+        janelaGuia = raiz.open(pr.onde, 'dgo-guia-' + p, 'popup=yes,width=' + largura + ',height=' + Math.round(h * 0.92) + ',left=' + esquerda + ',top=0');
+      } catch (e) { janelaGuia = null; }
+      if (!janelaGuia) { try { raiz.open(pr.onde, '_blank', 'noopener'); } catch (e2) {} }
+    }
 
     function selos(pr) {
       var s = [];
@@ -4725,13 +4754,37 @@
         if (pr.limite) corpo.appendChild(el('p', { class: 'dgo-mini' }, [el('b', { texto: t('limitesTit') + ': ' }), d.createTextNode(limiteTxt(pr))]));
         if (pr.conta) corpo.appendChild(el('p', { class: 'dgo-mini' }, [el('b', { texto: t('contaTit') + ': ' }), d.createTextNode(pr.conta[Idioma.atual] || pr.conta.pt)]));
 
-        if (pr.onde) {
+        if (pr.onde && !emGuiaDe(p)) {
           corpo.appendChild(el('a', { class: 'dgo-b', href: pr.onde, target: '_blank', rel: 'noopener noreferrer', style: { textDecoration: 'none' },
             texto: t('abrirSite') + ' ↗ ' + nomeProv(pr) }));
         }
 
-        /* guia passo a passo, aberto quando ainda nao ha chave */
-        if (pr.passos && pr.passos.length) {
+        var emGuia = emGuiaDe(p);
+        if (emGuia) {
+          var n = Math.min(guia[p], pr.passos.length - 1), ps = pr.passos[n], ultimo = n === pr.passos.length - 1;
+          var rotB = null;
+          if (ps.ilu === 'botao') { var mm = (ps[Idioma.atual] || ps.pt).match(/“([^”]+)”/); rotB = mm ? mm[1].split(' / ')[0] : null; }
+          var passo = el('div', { class: 'dgo-passo', role: 'group', 'aria-label': t('guiaPasso') }, [
+            el('div', { class: 'dgo-passo-cab' }, [
+              el('b', { texto: t('passo') + ' ' + (n + 1) + ' ' + t('de') + ' ' + pr.passos.length }),
+              el('span', { class: 'dgo-passo-barra' }, [el('span', { style: { width: Math.round(((n + 1) / pr.passos.length) * 100) + '%' } })])
+            ]),
+            el('p', { class: 'dgo-passo-txt', texto: ps[Idioma.atual] || ps.pt }),
+            iluPasso(p, n + 1, ps.ilu, rotB)
+          ]);
+          var lp = el('div', { class: 'dgo-linha dgo-usar' });
+          if (ps.ilu !== 'colar') {
+            lp.appendChild(el('button', { class: 'dgo-b', type: 'button', texto: t('abrirAoLado') + ' ↗', onclick: function () { abrirAoLado(pr, p); } }));
+          }
+          if (n > 0) lp.appendChild(el('button', { class: 'dgo-b dgo-b2', type: 'button', texto: '‹ ' + t('anterior'), onclick: function () { guiaDefinir(p, n - 1); reabrir(); } }));
+          if (!ultimo) lp.appendChild(el('button', { class: 'dgo-b', type: 'button', texto: '✓ ' + t('jaFiz') + ' ›', onclick: function () { guiaDefinir(p, n + 1); reabrir(); } }));
+          lp.appendChild(el('button', { class: 'dgo-b dgo-b2', type: 'button', texto: t('sairGuia'), onclick: function () { guiaDefinir(p, null); reabrir(); } }));
+          passo.appendChild(lp);
+          if (ultimo) passo.appendChild(el('p', { class: 'dgo-mini', texto: t('colarAbaixo') }));
+          corpo.appendChild(passo);
+        }
+        /* guia passo a passo (lista inteira), aberto quando ainda nao ha chave */
+        if (pr.passos && pr.passos.length && !emGuia) {
           var det = el('details', { class: 'dgo-guia' });
           if (!tem) det.open = true;
           det.appendChild(el('summary', { texto: '🧭 ' + t('guiaPasso') + ' (' + pr.passos.length + ')' }));
@@ -4743,6 +4796,8 @@
           });
           det.appendChild(ol);
           det.appendChild(el('p', { class: 'dgo-mini', texto: t('guiaPrintDica').replace('{arq}', 'guia-' + p + '-2.png') }));
+          if (pr.passos.length > 1 && !pr.semChave) corpo.appendChild(el('button', { class: 'dgo-b', type: 'button', texto: '▶ ' + t('comecarGuia'),
+            onclick: function () { guiaDefinir(p, 0); reabrir(); } }));
           corpo.appendChild(det);
         }
 
@@ -4786,6 +4841,8 @@
             testarChave(p, valor).then(function (r) {
               msg.innerHTML = '';
               msg.appendChild(aviso(r.semTeste ? t('chaveSalva') : t('chaveOk'), 'ok'));
+              guiaDefinir(p, null);
+              if (janelaGuia && !janelaGuia.closed) { try { janelaGuia.close(); } catch (e3) {} }
               if (r.modelos && dl) {
                 var gratis = r.modelos.filter(function (m) { return m.gratis; });
                 var usar = (gratis.length && pr.gratis) ? gratis : r.modelos;

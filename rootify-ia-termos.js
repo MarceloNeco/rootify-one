@@ -214,22 +214,88 @@
     return { titulo: mt ? mt[1].trim() : '', texto: texto.trim() };
   }
 
-  /* ---- as ações ---- */
-  function pedidoEscrever(t, extra) {
-    return 'Escreva o documento "' + nomeTipo(t.tipo) + '" ' + (t.app === '*' ? 'da plataforma SolverONE (vale para todos os apps)' : 'do app ' + H.nomeApp(t.app).replace(/^\S+\s/, '')) +
-      '. Aceite ' + (t.obrigatorio ? 'obrigatório antes de usar o app' : 'não obrigatório (só informativo)') + '.\n\nFATOS DA PLATAFORMA:\n- ' + fatosPlataforma().join('\n- ') +
-      '\n\nFATOS DO APP:\n' + fatosDoApp(t.app).join('\n') +
-      '\n\nO documento precisa cobrir:\n' + listaCobrir(t.tipo) +
-      (extra ? '\n\nPEDIDO DA EQUIPE: ' + extra : '') +
-      '\n\nResponda EXATAMENTE neste formato, sem mais nada:\nTITULO: <título curto>\nTEXTO:\n<texto do documento>';
+  /* ---- perfil de escrita: o que a pessoa escolhe no painel ---- */
+  var PERFIL = {
+    tipos: [
+      ['uso', 'Termos de uso', 'Terms of use'], ['privacidade', 'Política de privacidade', 'Privacy policy'],
+      ['aviso-legal', 'Aviso legal / isenção de responsabilidade', 'Legal notice / disclaimer'],
+      ['terceiros', 'Direitos reservados e conteúdo de terceiros', 'Reserved rights and third-party content'],
+      ['cookies', 'Política de cookies e armazenamento no navegador', 'Cookies and browser-storage policy'],
+      ['consentimento', 'Termo de consentimento (LGPD)', 'Consent form (LGPD)'],
+      ['faq', 'Perguntas frequentes sobre o documento', 'FAQ about the document'],
+      ['resumo', 'Resumo em linguagem simples (o essencial em 5 linhas)', 'Plain-language summary (the essentials in 5 lines)'],
+      ['outro', 'Outro', 'Other']
+    ],
+    tons: [
+      ['simples', 'Claro e simples, para leigos (padrão)', 'Clear and simple, for laypeople (default)',
+        'Frases curtas, sem juridiquês; quando citar lei, explique em uma linha o que ela significa na prática.'],
+      ['juridico', 'Jurídico formal, com artigos e leis', 'Formal legal, with articles and statutes',
+        'Tom jurídico formal: cite artigos e incisos (LGPD Lei 13.709/2018, CDC Lei 8.078/1990, Marco Civil Lei 12.965/2014, Código Civil), use cláusulas numeradas (1., 1.1, 1.2) e definições no início.'],
+      ['amigavel', 'Amigável e conversacional', 'Friendly and conversational',
+        'Tom acolhedor, falando com "você", como um app que respeita quem usa; mantém a precisão do que é decidido.'],
+      ['objetivo', 'Curto e objetivo', 'Short and to the point',
+        'O mais curto possível sem perder nenhuma decisão; itens de uma linha.'],
+      ['bilingue', 'Fiel para tradução (frases paralelas PT/EN)', 'Translation-friendly (parallel PT/EN sentences)',
+        'Frases simples e paralelas, fáceis de traduzir literalmente; evite expressões idiomáticas.']
+    ],
+    publicos: [
+      ['leigo', 'Usuário final (leigo)', 'End user (layperson)', 'quem usa o app, sem formação jurídica'],
+      ['advogado', 'Advogado revisor', 'Reviewing lawyer', 'um advogado que vai revisar: pode ser técnico e apontar bases legais'],
+      ['equipe', 'Equipe interna', 'Internal team', 'a equipe que administra a plataforma: foco em obrigações e procedimentos']
+    ],
+    tamanhos: [['curto', 'Curto (até ~10 itens)', 'Short (up to ~10 items)', 'no máximo 10 itens curtos'], ['medio', 'Médio (padrão)', 'Medium (default)', 'tamanho médio, cobrindo a lista sem alongar'], ['completo', 'Completo e detalhado', 'Complete and detailed', 'completo e detalhado, com subitens onde ajudar']],
+    incluir: [
+      ['leis', 'Citar leis e artigos (LGPD, CDC, Marco Civil)', 'Cite laws and articles (LGPD, consumer code, Internet law)', 'cite as leis e artigos aplicáveis, com número e ano'],
+      ['disclaimer', 'Isenção de responsabilidade (disclaimer)', 'Disclaimer of liability', 'inclua uma cláusula de isenção/limitação de responsabilidade respeitando o Código de Defesa do Consumidor'],
+      ['privacidade', 'Seção resumida de privacidade e dados', 'Short privacy and data section', 'inclua uma seção curta sobre privacidade e dados, remetendo à Política de privacidade'],
+      ['direitos', 'Direitos do titular e como exercer (LGPD art. 18)', 'Data-subject rights and how to exercise them (LGPD art. 18)', 'liste os direitos do titular (LGPD art. 18) e o caminho para exercê-los, com prazo de 15 dias'],
+      ['contato', 'Contato e encarregado (DPO)', 'Contact and DPO', 'inclua o canal de contato e o encarregado (DPO)'],
+      ['vigencia', 'Data de vigência e regra de atualização', 'Effective date and update rule', 'inclua data de vigência e como o documento muda e como a pessoa fica sabendo'],
+      ['profissional', 'Aviso "não substitui profissional"', '"Does not replace a professional" notice', 'inclua o aviso de que o conteúdo é informativo e não substitui o profissional adequado (saúde, educação física, contábil, jurídico, conforme o app)'],
+      ['cookies', 'Cookies e armazenamento no navegador', 'Cookies and browser storage', 'explique o armazenamento no navegador (localStorage/IndexedDB), service worker e cookies, se houver'],
+      ['ia', 'Uso de IA de terceiros com chave da pessoa', 'Third-party AI with the person’s own key', 'explique que recursos de IA usam a chave da própria pessoa, que a pergunta vai ao provedor escolhido e que a resposta pode errar'],
+      ['pi', 'Propriedade intelectual', 'Intellectual property', 'inclua propriedade intelectual: o conteúdo da pessoa é dela; marcas e conteúdo de terceiros pertencem aos donos'],
+      ['criancas', 'Crianças e responsáveis (LGPD art. 14)', 'Children and guardians (LGPD art. 14)', 'trate dados de crianças: consentimento de um responsável (LGPD art. 14) e nomes trocados por códigos antes de ir para a IA'],
+      ['seguranca', 'Segurança e perda de senha', 'Security and lost password', 'explique a cifra no aparelho e que senha e código de recuperação perdidos = dado perdido']
+    ]
+  };
+  function achar(lista, id) { return lista.filter(function (x) { return x[0] === id; })[0]; }
+  function nomeTipoPerfil(tipo) { var x = achar(PERFIL.tipos, tipo); return x ? x[1] : nomeTipo(tipo); }
+  function textoPerfil(perfil) {
+    perfil = perfil || {};
+    var ls = [];
+    var tom = achar(PERFIL.tons, perfil.tom || 'simples'); if (tom) ls.push('TOM: ' + tom[3]);
+    var pub = achar(PERFIL.publicos, perfil.publico || 'leigo'); if (pub) ls.push('PÚBLICO: ' + pub[3] + '.');
+    var tam = achar(PERFIL.tamanhos, perfil.tamanho || 'medio'); if (tam) ls.push('TAMANHO: ' + tam[3] + '.');
+    var inc = (perfil.incluir || []).map(function (id) { var x = achar(PERFIL.incluir, id); return x ? '- ' + x[3] : null; }).filter(Boolean);
+    if (inc.length) ls.push('INCLUIR OBRIGATORIAMENTE:\n' + inc.join('\n'));
+    if (perfil.livre) ls.push('INSTRUÇÃO DA EQUIPE (tem prioridade sobre o resto): ' + perfil.livre);
+    return ls.join('\n');
   }
-  function pedidoMelhorar(t, atual, extra) {
-    return 'Reescreva o documento abaixo ("' + nomeTipo(t.tipo) + '", ' + H.nomeApp(t.app).replace(/^\S+\s/, '') + ') deixando mais claro e completo, SEM mudar o que ele decide. ' +
-      'Complete o que faltar da lista, usando só os fatos.\n\nFATOS DA PLATAFORMA:\n- ' + fatosPlataforma().join('\n- ') +
-      '\n\nFATOS DO APP:\n' + fatosDoApp(t.app).join('\n') + '\n\nO documento precisa cobrir:\n' + listaCobrir(t.tipo) +
-      (extra ? '\n\nPEDIDO DA EQUIPE (prioridade): ' + extra : '') +
-      '\n\nDOCUMENTO ATUAL:\nTITULO: ' + (atual.titulo || '') + '\nTEXTO:\n' + (atual.texto || '') +
-      '\n\nResponda EXATAMENTE neste formato, sem mais nada:\nTITULO: <título curto>\nTEXTO:\n<texto do documento>';
+  function contexto(t, perfil) {
+    var tipo = (perfil && perfil.tipo) || t.tipo;
+    return 'Documento: "' + nomeTipoPerfil(tipo) + '" ' + (t.app === '*' ? 'da plataforma SolverONE (vale para todos os apps)' : 'do app ' + H.nomeApp(t.app).replace(/^\S+\s/, '')) +
+      '. Aceite ' + (t.obrigatorio ? 'obrigatório antes de usar o app' : 'não obrigatório (só informativo)') + '.\n\nFATOS DA PLATAFORMA:\n- ' + fatosPlataforma().join('\n- ') +
+      '\n\nFATOS DO APP:\n' + fatosDoApp(t.app).join('\n') + '\n\nO documento precisa cobrir:\n' + listaCobrir(tipo === 'cookies' || tipo === 'consentimento' ? 'privacidade' : tipo) +
+      '\n\n' + textoPerfil(perfil);
+  }
+  var FORMATO = '\n\nResponda EXATAMENTE neste formato, sem mais nada:\nTITULO: <título curto>\nTEXTO:\n<texto do documento>';
+  /* ---- as ações ---- */
+  function pedidoEscrever(t, extra, perfil) {
+    return 'Escreva o documento do zero.\n' + contexto(t, perfil) + (extra ? '\n\nPEDIDO EXTRA: ' + extra : '') + FORMATO;
+  }
+  function pedidoMelhorar(t, atual, extra, perfil) {
+    return 'REESCREVA o documento abaixo levando em conta TUDO o que já está escrito: mantenha as decisões e a ordem dos assuntos, melhore a clareza, complete o que faltar da lista e aplique o tom pedido. Não invente fatos novos.\n' +
+      contexto(t, perfil) + (extra ? '\n\nPEDIDO EXTRA (prioridade): ' + extra : '') +
+      '\n\nDOCUMENTO ATUAL:\nTITULO: ' + (atual.titulo || '') + '\nTEXTO:\n' + (atual.texto || '') + FORMATO;
+  }
+  function pedidoCompletar(t, atual, perfil) {
+    return 'Escreva SOMENTE o que está FALTANDO no documento abaixo (itens novos, para inserir depois do texto atual, continuando a numeração). Não repita o que já existe.\n' +
+      contexto(t, perfil) + '\n\nDOCUMENTO ATUAL:\nTITULO: ' + (atual.titulo || '') + '\nTEXTO:\n' + (atual.texto || '') + FORMATO;
+  }
+  function pedidoLivre(t, atual, perfil) {
+    return 'Siga a instrução da equipe abaixo sobre o documento. Use só os fatos fornecidos.\n' + contexto(t, perfil) +
+      '\n\nDOCUMENTO ATUAL:\nTITULO: ' + (atual.titulo || '') + '\nTEXTO:\n' + (atual.texto || '') + FORMATO;
   }
   function pedidoConferir(t, atual) {
     return 'Confira o documento abaixo ("' + nomeTipo(t.tipo) + '") contra a lista e os fatos. Aponte só o que FALTA, está ERRADO em relação aos fatos, ou é ARRISCADO para o usuário ou para a plataforma.\n\n' +
@@ -271,9 +337,11 @@
       passo(T('🌐 Traduzindo EN → PT…', '🌐 Translating EN → PT…'));
       return p(pedidoTraduzir(en, 'pt')).then(function (r) { return { titulo: { pt: separar(r).titulo, en: en.titulo }, texto: { pt: separar(r).texto, en: en.texto }, chamadas: chamadas }; });
     }
-    var primeiro = (acao === 'escrever' || !pt.texto)
-      ? (passo(T('📝 Escrevendo em PT…', '📝 Writing in PT…')), p(pedidoEscrever(t, opcoes.extra)))
-      : (passo(T('📝 Melhorando o texto em PT…', '📝 Improving the PT text…')), p(pedidoMelhorar(t, pt, opcoes.extra)));
+    var perfil = opcoes.perfil || null, primeiro;
+    if (acao === 'completar' && pt.texto) { passo(T('📝 Escrevendo o que falta…', '📝 Writing what is missing…')); primeiro = p(pedidoCompletar(t, pt, perfil)); }
+    else if (acao === 'livre') { passo(T('📝 Seguindo a sua instrução…', '📝 Following your instruction…')); primeiro = p(pedidoLivre(t, pt, perfil)); }
+    else if (acao === 'escrever' || !pt.texto) { passo(T('📝 Escrevendo em PT…', '📝 Writing in PT…')); primeiro = p(pedidoEscrever(t, opcoes.extra, perfil)); }
+    else { passo(T('📝 Reescrevendo o texto em PT…', '📝 Rewriting the PT text…')); primeiro = p(pedidoMelhorar(t, pt, opcoes.extra, perfil)); }
     return primeiro.then(function (r) {
       var s = separar(r); if (!s.texto) throw new Error(T('a IA não mandou o texto no formato combinado', 'the AI did not send the text in the agreed format'));
       pt = { titulo: s.titulo || pt.titulo || nomeTipo(t.tipo), texto: s.texto };
@@ -283,7 +351,7 @@
         faltas = lerFaltas(r2);
         if (!faltas.length) return;
         passo(T('🛠 Corrigindo ', '🛠 Fixing ') + faltas.length + T(' ponto(s)…', ' point(s)…'));
-        return p(pedidoMelhorar(t, pt, 'Corrija estes pontos: ' + faltas.join('; '))).then(function (r3) {
+        return p(pedidoMelhorar(t, pt, 'Corrija estes pontos: ' + faltas.join('; '), perfil)).then(function (r3) {
           var s3 = separar(r3); if (s3.texto) pt = { titulo: s3.titulo || pt.titulo, texto: s3.texto };
         });
       });
@@ -297,112 +365,188 @@
   };
 
   /* grava o resultado como rascunho, guardando o texto anterior */
-  IAT.gravar = function (t, res, acao) {
+  /* historico de textos da versao: toda troca (IA ou desfazer) guarda o texto anterior, para auditoria */
+  IAT.registrarHistorico = function (v, origem, antes, detalhe) {
+    v.historico = v.historico || [];
+    v.historico.push({ id: U.uid('h-'), quando: U.agora(), quem: S.pessoa.email, origem: origem, titulo: antes.titulo, texto: antes.texto, detalhe: detalhe || null });
+    if (v.historico.length > 40) v.historico.splice(0, v.historico.length - 40);
+  };
+  IAT.gravar = function (t, res, acao, opcoes) {
+    opcoes = opcoes || {};
     var v = D.Termos.ultima(t), criou = false;
     if (v.estado !== 'rascunho') { v = D.Termos.novaVersao(t, S.pessoa.email); criou = true; }
     var antes = { titulo: U.clonar(v.titulo), texto: U.clonar(v.texto) };
     var p = provInfo();
+    var modo = opcoes.modo || 'substituir';
+    var novoTexto = res.texto;
+    if (modo === 'inserir') novoTexto = { pt: ((antes.texto.pt || '').trim() + '\n\n' + (res.texto.pt || '')).trim(), en: ((antes.texto.en || '').trim() + '\n\n' + (res.texto.en || '')).trim() };
+    IAT.registrarHistorico(v, 'ia-' + acao + (modo === 'inserir' ? '-inserir' : ''), antes, { provedor: p.nome, modelo: p.modelo, perfil: opcoes.perfil || null });
     v.antesIA = { titulo: antes.titulo, texto: antes.texto, autor: v.autor, nota: U.clonar(v.nota), quando: U.agora() };
-    v.titulo = res.titulo; v.texto = res.texto; v.autor = S.pessoa.email;
+    v.titulo = modo === 'inserir' ? (antes.titulo.pt ? antes.titulo : res.titulo) : res.titulo; v.texto = novoTexto; v.autor = S.pessoa.email;
     v.ia = { provedor: p.nome, modelo: p.modelo, quando: U.agora(), acao: acao };
     v.nota = { pt: 'Escrito com IA (' + p.nome + ' · ' + p.modelo + ') em ' + U.data(U.agora()) + '. Confira os fatos, preencha os [A DEFINIR] e valide com advogado antes de publicar.',
                en: 'Written with AI (' + p.nome + ' · ' + p.modelo + ') on ' + U.data(U.agora()) + '. Check the facts, fill in the [TO BE DEFINED] and have a lawyer review it before publishing.' };
-    return RF.mudar('termos', 'termos', 'ia-' + acao, t.id, antes, { versao: v.versao, provedor: p.nome, modelo: p.modelo },
-      T('Rascunho escrito com IA: ', 'Draft written with AI: ') + '"' + res.titulo.pt + '" v' + v.versao + (criou ? T(' (nova versão)', ' (new version)') : ''));
+    return RF.mudar('termos', 'termos', 'ia-' + acao, t.id, antes, { versao: v.versao, provedor: p.nome, modelo: p.modelo, modo: modo, perfil: opcoes.perfil || null, texto: novoTexto },
+      T('Rascunho escrito com IA: ', 'Draft written with AI: ') + '"' + (v.titulo.pt || res.titulo.pt) + '" v' + v.versao + (modo === 'inserir' ? T(' (inserido abaixo)', ' (inserted below)') : '') + (criou ? T(' (nova versão)', ' (new version)') : ''));
+  };
+  IAT.restaurar = function (t, v, h) {
+    var antes = { titulo: U.clonar(v.titulo), texto: U.clonar(v.texto) };
+    IAT.registrarHistorico(v, 'restaurar', antes, { de: h.id });
+    v.titulo = U.clonar(h.titulo); v.texto = U.clonar(h.texto);
+    return RF.mudar('termos', 'termos', 'restaurar-texto', t.id, antes, { versao: v.versao, de: h.quando }, T('Texto restaurado do histórico de ', 'Text restored from history of ') + U.data(h.quando, true));
   };
   IAT.desfazer = function (t, v) {
     if (!v.antesIA) return Promise.resolve();
     var antes = { titulo: v.titulo, texto: v.texto };
+    IAT.registrarHistorico(v, 'desfazer', antes, null);
     v.titulo = v.antesIA.titulo; v.texto = v.antesIA.texto; v.autor = v.antesIA.autor || v.autor; v.nota = v.antesIA.nota || null;
     delete v.antesIA; delete v.ia;
     return RF.mudar('termos', 'termos', 'ia-desfazer', t.id, antes, { versao: v.versao }, T('Texto da IA desfeito (v', 'AI text undone (v') + v.versao + ')');
   };
+  IAT.PERFIL = PERFIL;
   IAT.contarADefinir = function (texto) {
     var s = (texto && (texto.pt + '\n' + texto.en)) || '';
     return (s.match(/\[(A DEFINIR|TO BE DEFINED)/gi) || []).length;
   };
 
   /* ------------------------------------------------------------------
-     1. ASSISTENTE NO EDITOR DO TERMO
+     1. PAINEL DE IA NO EDITOR DO TERMO (quadro próprio, abaixo do texto)
+     Lê o que já está escrito, remodela conforme o perfil escolhido e mostra
+     a proposta num modal com: inserir abaixo · substituir · descartar.
      ------------------------------------------------------------------ */
-  IAT.abrirEditor = function (t, v, lerAtual) {
-    if (!IAT.pronta()) return;
+  function opcoesDe(lista) { return lista.map(function (x) { return [x[0], T(x[1], x[2])]; }); }
+  IAT.painel = function (t, v, lerAtual) {
     var ACOES = [
-      ['melhorar', T('Melhorar e completar o texto atual', 'Improve and complete the current text')],
-      ['escrever', T('Escrever do zero (substitui o texto)', 'Write from scratch (replaces the text)')],
+      ['melhorar', T('Reescrever o texto atual (mantém as decisões, aplica o tom)', 'Rewrite the current text (keeps decisions, applies the tone)')],
+      ['completar', T('Completar: escrever só o que falta, para inserir abaixo', 'Complete: write only what is missing, to insert below')],
+      ['escrever', T('Escrever do zero (ignora o texto atual)', 'Write from scratch (ignores the current text)')],
       ['conferir', T('Só conferir: o que falta ou está arriscado', 'Just check: what is missing or risky')],
       ['traduzir-en', T('Traduzir PT → EN', 'Translate PT → EN')],
-      ['traduzir-pt', T('Traduzir EN → PT', 'Translate EN → PT')]
+      ['traduzir-pt', T('Traduzir EN → PT', 'Translate EN → PT')],
+      ['livre', T('Livre: eu digo o que fazer', 'Free: I say what to do')]
     ];
     var atual = lerAtual();
+    var guardado = (C.obj('config').perfilIA || {});
     var acao = ui.escolha(ACOES, atual.texto.pt ? 'melhorar' : 'escrever');
-    var extra = ui.entrada('', { linhas: 3, attrs: { placeholder: T('Opcional. Ex.: incluir que o app usa a câmera para ler exames.', 'Optional. E.g.: mention the app uses the camera to read lab results.') } });
-    var revisar = ui.marca(T('Conferir e corrigir sozinho depois de escrever (+2 pedidos à IA)', 'Check and fix on its own after writing (+2 AI requests)'), true);
+    var tipo = ui.escolha(opcoesDe(PERFIL.tipos), achar(PERFIL.tipos, t.tipo) ? t.tipo : 'outro');
+    var tom = ui.escolha(opcoesDe(PERFIL.tons), guardado.tom || 'simples');
+    var publico = ui.escolha(opcoesDe(PERFIL.publicos), guardado.publico || 'leigo');
+    var tamanho = ui.escolha(opcoesDe(PERFIL.tamanhos), guardado.tamanho || 'medio');
+    var marcas = PERFIL.incluir.map(function (x) { return ui.marca(T(x[1], x[2]), (guardado.incluir || ['leis', 'vigencia', 'contato']).indexOf(x[0]) !== -1); });
+    var livre = ui.entrada('', { linhas: 3, attrs: { placeholder: T('Ex.: “Acrescente um item sobre a câmera ler exames” ou “Transforme em perguntas e respostas”.', 'E.g. “Add an item about the camera reading lab results” or “Turn it into questions and answers”.') } });
+    var revisar = ui.marca(T('Conferir e corrigir sozinho depois de escrever (+2 pedidos)', 'Check and fix on its own after writing (+2 requests)'), true);
     var estado = el('p', { class: 'rf-dica', 'aria-live': 'polite' });
-    var resultado = el('div');
-    var gerar = ui.botao('✨ ' + T('Gerar', 'Generate'), null, 'pri');
-    function ajustar() {
-      var a = acao.value;
-      revisar.style.display = (a === 'escrever' || a === 'melhorar') ? '' : 'none';
-      extra.parentNode.style.display = (a === 'escrever' || a === 'melhorar') ? '' : 'none';
+    var gerar = ui.botao('✨ ' + T('Gerar proposta', 'Generate proposal'), null, 'pri');
+    var incluirBloco = el('fieldset', { class: 'rf-ia-incluir' }, [el('legend', { texto: T('Incluir no texto', 'Include in the text') })].concat(marcas));
+    var livreCampo = ui.campo(T('Instrução livre (opcional; obrigatória no modo Livre)', 'Free instruction (optional; required in Free mode)'), livre);
+    function perfil() {
+      return { tipo: tipo.value, tom: tom.value, publico: publico.value, tamanho: tamanho.value,
+        incluir: PERFIL.incluir.filter(function (x, i) { return marcas[i].querySelector('input').checked; }).map(function (x) { return x[0]; }), livre: livre.value.trim() };
     }
-    var corpo = el('div', { class: 'rf-form' }, [
-      el('p', { class: 'rf-dica' }, [T('IA em uso: ', 'AI in use: '), el('b', { texto: IAT.rotuloIA() }), ' · ',
-        el('a', { href: '#', texto: T('trocar IA ou chave', 'change AI or key'), onclick: function (e) { e.preventDefault(); dgo().chaves(); } })]),
-      ui.campo(T('O que fazer', 'What to do'), acao),
-      ui.campo(T('Pedido extra', 'Extra request'), extra),
-      revisar,
-      el('div', { class: 'rf-acoes' }, [gerar]),
-      estado, resultado
+    function ajustar() {
+      var a = acao.value, escreve = (a === 'melhorar' || a === 'completar' || a === 'escrever' || a === 'livre');
+      [tipo, tom, publico, tamanho].forEach(function (c) { c.parentNode.style.display = escreve ? '' : 'none'; });
+      incluirBloco.style.display = escreve ? '' : 'none';
+      revisar.style.display = (a === 'melhorar' || a === 'escrever' || a === 'livre') ? '' : 'none';
+      livreCampo.style.display = (a === 'conferir' || a.indexOf('traduzir') === 0) ? 'none' : '';
+    }
+    acao.onchange = ajustar;
+    var cab = el('p', { class: 'rf-dica' }, [T('IA em uso: ', 'AI in use: '), el('b', { texto: dgo() && dgo().temChave() ? IAT.rotuloIA() : T('nenhuma chave', 'no key') }), ' · ',
+      el('a', { href: '#', texto: T('trocar IA ou chave', 'change AI or key'), onclick: function (e) { e.preventDefault(); if (dgo()) dgo().chaves(); } }),
+      ' · ', T('Ela lê o que já está escrito acima e devolve uma proposta; nada é salvo sem você escolher.', 'It reads what is written above and returns a proposal; nothing is saved unless you choose.')]);
+    var painel = ui.secao('✨ ' + T('Assistente de escrita (IA)', 'Writing assistant (AI)'), [
+      cab,
+      el('div', { class: 'rf-form' }, [
+        ui.campo(T('O que fazer', 'What to do'), acao),
+        el('div', { class: 'rf-grade-2' }, [ui.campo(T('Tipo de documento', 'Document type'), tipo), ui.campo(T('Tom', 'Tone'), tom)]),
+        el('div', { class: 'rf-grade-2' }, [ui.campo(T('Para quem', 'Audience'), publico), ui.campo(T('Tamanho', 'Length'), tamanho)]),
+        incluirBloco, livreCampo, revisar,
+        el('div', { class: 'rf-acoes' }, [gerar]), estado
+      ])
     ]);
-    var m = ui.modal('✨ ' + T('Escrever com IA', 'Write with AI'), corpo, { largo: true });
-    acao.onchange = ajustar; ajustar();
+    ajustar();
 
     gerar.onclick = function () {
       var a = acao.value; atual = lerAtual();
-      if ((a === 'melhorar' || a === 'conferir' || a === 'traduzir-en') && !atual.texto.pt) return ui.aviso(T('O texto em PT está vazio. Use "Escrever do zero".', 'The PT text is empty. Use "Write from scratch".'), 'erro');
+      if (!IAT.pronta()) return;
+      if ((a === 'melhorar' || a === 'completar' || a === 'conferir' || a === 'traduzir-en') && !atual.texto.pt) return ui.aviso(T('O texto em PT está vazio. Use “Escrever do zero”.', 'The PT text is empty. Use “Write from scratch”.'), 'erro');
       if (a === 'traduzir-pt' && !atual.texto.en) return ui.aviso(T('O texto em EN está vazio.', 'The EN text is empty.'), 'erro');
+      if (a === 'livre' && !livre.value.trim()) return ui.aviso(T('No modo Livre, escreva a instrução.', 'In Free mode, write the instruction.'), 'erro');
+      var pf = perfil();
+      var cfg = C.obj('config'); cfg.perfilIA = { tom: pf.tom, publico: pf.publico, tamanho: pf.tamanho, incluir: pf.incluir }; C.salvar('config');
       confirmarEnvio().then(function (ok) {
         if (!ok) return;
-        gerar.disabled = true; U.limpar(resultado);
-        IAT.executar(t, a, atual, { extra: extra.value.trim(), revisar: revisar.querySelector('input').checked, passo: function (s) { estado.textContent = s; } })
+        gerar.disabled = true;
+        IAT.executar(t, a, atual, { perfil: pf, revisar: revisar.querySelector('input').checked, passo: function (s) { estado.textContent = s; } })
           .then(function (res) {
             gerar.disabled = false;
             estado.textContent = T('Pronto · ', 'Done · ') + res.chamadas + T(' pedido(s) à IA.', ' AI request(s).');
-            RF.Log.registrar('termos', 'ia-pedido', t.id, null, { acao: a, chamadas: res.chamadas }, T('IA consultada no termo (', 'AI consulted on term (') + a + ')');
-            if (a === 'conferir') return mostrarFaltas(res.faltas);
-            mostrarProposta(res, a);
+            RF.Log.registrar('termos', 'ia-pedido', t.id, null, { acao: a, perfil: pf, chamadas: res.chamadas }, T('IA consultada no termo (', 'AI consulted on term (') + a + ')');
+            if (a === 'conferir') return modalFaltas(res.faltas);
+            modalProposta(res, a, pf);
           })
           .catch(function (e) { gerar.disabled = false; estado.textContent = ''; ui.aviso(T('A IA não respondeu: ', 'The AI did not answer: ') + explicarErro(e), 'erro'); });
       });
     };
-    function mostrarFaltas(faltas) {
-      U.limpar(resultado);
-      if (!faltas.length) { resultado.appendChild(el('div', { class: 'rf-faixa-aviso rf-faixa-info', texto: T('A IA não achou nada faltando. Mesmo assim, valide com advogado.', 'The AI found nothing missing. Still, have a lawyer review it.') })); return; }
-      resultado.appendChild(ui.secao(T('O que a IA apontou', 'What the AI pointed out'), [el('ul', {}, faltas.map(function (f) { return el('li', { texto: f }); }))],
-        [ui.botao('🛠 ' + T('Corrigir com a IA', 'Fix with the AI'), function () {
-          acao.value = 'melhorar'; ajustar(); extra.value = 'Corrija estes pontos: ' + faltas.join('; '); gerar.click();
-        }, 'pri')]));
+    function modalFaltas(faltas) {
+      var corpo = faltas.length
+        ? el('div', {}, [el('ul', {}, faltas.map(function (f) { return el('li', { texto: f }); }))])
+        : el('div', { class: 'rf-faixa-aviso rf-faixa-info', texto: T('A IA não achou nada faltando. Mesmo assim, valide com advogado.', 'The AI found nothing missing. Still, have a lawyer review it.') });
+      var m = ui.modal('🔎 ' + T('O que a IA apontou', 'What the AI pointed out'), corpo, { rodape: [
+        ui.botao(T('Fechar', 'Close'), function () { m.fechar(); }),
+        faltas.length ? ui.botao('🛠 ' + T('Corrigir com a IA', 'Fix with the AI'), function () { m.fechar(); acao.value = 'melhorar'; ajustar(); livre.value = 'Corrija estes pontos: ' + faltas.join('; '); gerar.click(); }, 'pri') : null
+      ].filter(Boolean) });
     }
-    function mostrarProposta(res, a) {
-      U.limpar(resultado);
-      var tit = ui.bilingue(T('Título proposto', 'Proposed title'), res.titulo), txt = ui.bilingue(T('Texto proposto', 'Proposed text'), res.texto, { linhas: 14 });
+    function modalProposta(res, a, pf) {
+      var tit = ui.bilingue(T('Título proposto', 'Proposed title'), res.titulo), txt = ui.bilingue(T('Texto proposto', 'Proposed text'), res.texto, { linhas: 12 });
       var nDef = IAT.contarADefinir(res.texto);
-      resultado.appendChild(el('div', {}, [
+      var temAtual = !!(lerAtual().texto.pt || lerAtual().texto.en);
+      var corpo = el('div', { class: 'rf-form' }, [
         res.faltas && res.faltas.length ? el('p', { class: 'rf-dica', texto: T('A IA conferiu e corrigiu: ', 'The AI checked and fixed: ') + res.faltas.join('; ') }) : null,
-        nDef ? el('div', { class: 'rf-faixa-aviso rf-faixa-info', texto: nDef + T(' marcador(es) [A DEFINIR] para você preencher (nome, e-mail, foro…). Dica: preencha uma vez em Termos → 🤖 Agente → "Dados que a IA usa".', ' [TO BE DEFINED] marker(s) for you to fill in (name, e-mail, venue…). Tip: fill them once in Terms → 🤖 Agent → "Facts the AI uses".') }) : null,
-        el('p', { class: 'rf-dica', texto: T('Pode editar aqui antes de usar. Nada foi salvo ainda.', 'You can edit here before using it. Nothing has been saved yet.') }),
-        tit, txt,
-        el('div', { class: 'rf-acoes' }, [
-          ui.botao(T('Descartar', 'Discard'), function () { U.limpar(resultado); estado.textContent = ''; }),
-          ui.botao('✓ ' + T('Usar este texto (salva como rascunho)', 'Use this text (saves as draft)'), function () {
-            var r = { titulo: tit.valor(), texto: txt.valor() };
-            IAT.gravar(t, r, a).then(function () { ui.aviso(T('Rascunho salvo. Dá para desfazer.', 'Draft saved. You can undo.')); m.fechar(); RF.renderizar(); });
-          }, 'pri')
-        ])
-      ]));
-      tit.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        nDef ? el('div', { class: 'rf-faixa-aviso rf-faixa-info', texto: nDef + T(' marcador(es) [A DEFINIR] para você preencher. Dica: preencha uma vez em Termos → 🤖 Agente → “Dados que a IA usa”.', ' [TO BE DEFINED] marker(s) for you to fill in. Tip: fill them once in Terms → 🤖 Agent → “Facts the AI uses”.') }) : null,
+        el('p', { class: 'rf-dica', texto: T('Pode editar aqui antes de escolher. O texto anterior fica no histórico (auditoria) e dá para desfazer.', 'You can edit here before choosing. The previous text stays in the history (audit) and can be undone.') }),
+        tit, txt
+      ]);
+      function aplicar(modo) {
+        var r = { titulo: tit.valor(), texto: txt.valor() };
+        IAT.gravar(t, r, a, { modo: modo, perfil: pf }).then(function () { ui.aviso(modo === 'inserir' ? T('Inserido abaixo do texto. Rascunho salvo.', 'Inserted below the text. Draft saved.') : T('Texto substituído. Rascunho salvo.', 'Text replaced. Draft saved.')); m.fechar(); RF.renderizar(); });
+      }
+      var m = ui.modal('✨ ' + T('Proposta da IA', 'AI proposal'), corpo, { largo: true, rodape: [
+        ui.botao(T('Descartar', 'Discard'), function () { m.fechar(); }),
+        temAtual ? ui.botao('⤓ ' + T('Inserir abaixo do texto atual', 'Insert below the current text'), function () { aplicar('inserir'); }) : null,
+        ui.botao('⇄ ' + (temAtual ? T('Substituir o texto', 'Replace the text') : T('Usar este texto', 'Use this text')), function () { aplicar('substituir'); }, 'pri')
+      ].filter(Boolean) });
     }
+    return painel;
+  };
+
+  /* historico de textos da versao (auditoria): quem, quando, por que, e o texto de antes */
+  IAT.secaoHistorico = function (t, v, podeEd) {
+    var h = (v.historico || []).slice().reverse();
+    var det = el('details', { class: 'rf-hist' }, [el('summary', { texto: '🕘 ' + T('Histórico de textos desta versão', 'Text history of this version') + ' (' + h.length + ')' })]);
+    if (!h.length) { det.appendChild(el('p', { class: 'rf-dica', texto: T('Nenhuma troca de texto ainda. Cada vez que a IA substitui ou insere, ou alguém desfaz, o texto anterior fica aqui.', 'No text change yet. Each time the AI replaces or inserts, or someone undoes, the previous text is kept here.') })); return det; }
+    var ROT = { 'desfazer': T('desfeito', 'undone'), 'restaurar': T('restaurado do histórico', 'restored from history'), 'devolvido': T('devolvido para rascunho', 'returned to draft') };
+    det.appendChild(ui.tabela([
+      { id: 'q', nome: T('Quando', 'When'), desenhar: function (x) { return U.data(x.quando, true); } },
+      { id: 'w', nome: T('Quem', 'Who'), valor: function (x) { return x.quem; } },
+      { id: 'o', nome: T('O que aconteceu', 'What happened'), valor: function (x) {
+        var base = ROT[x.origem] || (x.origem.indexOf('ia-') === 0 ? T('IA: ', 'AI: ') + x.origem.replace(/^ia-/, '').replace('-inserir', T(' (inserido abaixo)', ' (inserted below)')) : x.origem);
+        var d = x.detalhe || {};
+        return base + (d.provedor ? ' · ' + d.provedor + (d.modelo ? ' · ' + d.modelo : '') : '') + (d.perfil ? ' · ' + T('tom ', 'tone ') + d.perfil.tom : '');
+      } },
+      { id: 't', nome: T('Texto anterior (PT)', 'Previous text (PT)'), valor: function (x) { return (x.texto && x.texto.pt || '').slice(0, 80) + ((x.texto && x.texto.pt || '').length > 80 ? '…' : ''); } },
+      { id: 'a', nome: '', desenhar: function (x) {
+        return el('span', { class: 'rf-acoes' }, [
+          ui.botao(T('Ver', 'View'), function () {
+            var m = ui.modal(T('Texto anterior · ', 'Previous text · ') + U.data(x.quando, true), el('div', { class: 'rf-form' }, [ui.bilingue(T('Título', 'Title'), x.titulo), ui.bilingue(T('Texto', 'Text'), x.texto, { linhas: 12 })]),
+              { largo: true, rodape: [ui.botao(T('Fechar', 'Close'), function () { m.fechar(); }),
+                podeEd ? ui.botao('↶ ' + T('Restaurar este texto', 'Restore this text'), function () { IAT.restaurar(t, v, x).then(function () { m.fechar(); RF.renderizar(); }); }, 'pri') : null].filter(Boolean) });
+            Array.prototype.forEach.call(m.caixa.querySelectorAll('input,textarea'), function (i) { i.readOnly = true; });
+          }, 'p')
+        ]);
+      } }
+    ], h, { porPagina: 10 }));
+    return det;
   };
 
   /* ------------------------------------------------------------------

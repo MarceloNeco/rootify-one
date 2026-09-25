@@ -20,6 +20,7 @@
     substituido: [{ pt: 'substituído', en: 'superseded' }, 'cinza']
   };
   RF.telasTermos = { TIPOS: TIPOS_TERMO };   /* o agente de IA (rootify-ia-termos.js) usa os mesmos nomes */
+  function nomePorEmail(email) { var p = C.equipe().filter(function (x) { return x.email === email; })[0]; return p ? p.nome : (email || '—'); }
   function seloTermo(e) { var x = ESTADOS_TERMO[e] || [{ pt: e, en: e }, 'neutro']; return ui.selo(T(x[0]), x[1]); }
   function pessoasComPermissao(perm) {
     return C.equipe().filter(function (p) {
@@ -45,7 +46,7 @@
       { id: 'app', nome: 'App', valor: function (t) { return H.nomeApp(t.app); } },
       { id: 'ob', nome: T('Aceite obrigatório', 'Mandatory acceptance'), valor: function (t) { return t.obrigatorio ? T('sim', 'yes') : T('não', 'no'); } },
       { id: 'pub', nome: T('No ar', 'Live'), desenhar: function (t) { var v = D.Termos.publicada(t); return v ? ui.selo('v' + v.versao + ' · ' + U.data(v.publicadoEm), 'ok') : ui.selo(T('nenhuma', 'none'), 'cinza'); } },
-      { id: 'ult', nome: T('Versão em trabalho', 'Working version'), desenhar: function (t) { var v = D.Termos.ultima(t); return el('span', {}, ['v' + v.versao + ' ', seloTermo(v.estado)]); } }
+      { id: 'ult', nome: T('Versão em trabalho', 'Working version'), desenhar: function (t) { var v = D.Termos.ultima(t); return el('span', {}, ['v' + v.versao + ' ', seloTermo(v.estado), v.devolucao && v.estado === 'rascunho' ? el('span', { title: v.devolucao.motivo }, [' ', ui.selo('↩ ' + T('devolvido', 'returned'), 'atencao')]) : null]); } }
     ], lista, { aoClicar: function (t) { RF.Rota.ir('termos', 'termo', t.id); } }));
     area.appendChild(el('div', { class: 'rf-grade-2' }, [ui.cinza('termos.bloqueio'), ui.cinza('termos.juridico')]));
   };
@@ -73,6 +74,10 @@
           ' · ', T('em trabalho: ', 'working: '), 'v' + v.versao, ' ', seloTermo(v.estado), pub ? ' · ' + T('no ar: v', 'live: v') + pub.versao : ''])]),
       el('div', { class: 'rf-acoes' }, [ui.botao('‹ ' + T('Termos', 'Terms'), function () { RF.Rota.ir('termos'); }, 'p')])
     ]));
+    /* devolvido para rascunho: o motivo tem de estar na cara de quem vai corrigir */
+    if (v.devolucao && v.estado === 'rascunho') area.appendChild(el('div', { class: 'rf-faixa-aviso rf-faixa-atencao', role: 'status' }, [
+      el('b', { texto: '↩ ' + T('Devolvido para rascunho', 'Returned to draft') + ' · ' + nomePorEmail(v.devolucao.quem) + ' · ' + U.data(v.devolucao.quando, true) + ': ' }),
+      el('span', { texto: v.devolucao.motivo })]));
     if (v.nota) area.appendChild(el('div', { class: 'rf-faixa-aviso rf-faixa-info' }, [T(v.nota)]));
     var podeEd = RF.pode('termos:editar', t.app) && v.estado === 'rascunho';
     var tit = ui.bilingue(T('Título', 'Title'), v.titulo), txt = ui.bilingue(T('Texto', 'Text'), v.texto, { linhas: 12 });
@@ -92,10 +97,6 @@
       return RF.mudar('termos', 'termos', 'editar', t.id, null, { versao: v.versao }, T('Texto do termo salvo (v', 'Term text saved (v') + v.versao + ')');
     }
     if (podeEd && RF.iaTermos) {
-      /* IA: escreve, melhora, confere e traduz; o resultado entra como rascunho */
-      acoes.push(ui.botao('✨ ' + T('Escrever com IA', 'Write with AI'), function () {
-        RF.iaTermos.abrirEditor(t, v, function () { return { titulo: tit.valor(), texto: txt.valor() }; });
-      }));
       if (v.antesIA) acoes.push(ui.botao('↶ ' + T('Desfazer a IA', 'Undo the AI'), function () {
         ui.confirmar(T('Desfazer a IA', 'Undo the AI'), T('Volta o título e o texto de antes da IA. O texto da IA fica guardado no log.', 'Restores the title and text from before the AI. The AI text stays in the log.')).then(function (ok) {
           if (ok) RF.iaTermos.desfazer(t, v).then(RF.renderizar);
@@ -109,7 +110,7 @@
         if (!tv.pt || !tv.en || !xv.pt || !xv.en) return ui.aviso(T('Título e texto em PT e EN antes de enviar.', 'Title and text in PT and EN before sending.'), 'erro');
         var nDef = ((xv.pt + '\n' + xv.en + '\n' + tv.pt + '\n' + tv.en).match(/\[(A DEFINIR|TO BE DEFINED)/gi) || []).length;
         if (nDef) return ui.aviso(T('Ainda há ', 'There are still ') + nDef + T(' marcador(es) [A DEFINIR] no texto. Preencha antes de enviar.', ' [TO BE DEFINED] marker(s) in the text. Fill them in before sending.'), 'erro');
-        salvarTexto().then(function () { delete v.antesIA; transicao('revisao', T('enviado para aprovação', 'sent for approval')); });
+        salvarTexto().then(function () { delete v.antesIA; delete v.devolucao; transicao('revisao', T('enviado para aprovação', 'sent for approval')); });
       }, 'pri'));
     }
     if (v.estado === 'revisao' && RF.pode('termos:aprovar', t.app)) {
@@ -127,7 +128,12 @@
       }
       acoes.push(ui.botao(T('Devolver para rascunho', 'Return to draft'), function () {
         ui.confirmar(T('Devolver', 'Return'), T('Explique o que precisa mudar.', 'Explain what needs to change.'), { motivo: true }).then(function (ok) {
-          if (!ok) return; transicao('rascunho', T('devolvido: ', 'returned: ') + ok.motivo, function () { v.nota = { pt: 'Devolvido: ' + ok.motivo, en: 'Returned: ' + ok.motivo }; });
+          if (!ok) return; transicao('rascunho', T('devolvido: ', 'returned: ') + ok.motivo, function () {
+            v.devolucao = { quem: S.pessoa.email, quando: U.agora(), motivo: ok.motivo };
+            v.devolucoes = (v.devolucoes || []).concat([v.devolucao]);
+            if (RF.iaTermos) RF.iaTermos.registrarHistorico(v, 'devolvido', { titulo: U.clonar(v.titulo), texto: U.clonar(v.texto) }, { motivo: ok.motivo });
+            v.nota = null;
+          });
         });
       }));
     }
@@ -151,13 +157,17 @@
       ajustes = obrig;
     }
     area.appendChild(el('div', { class: 'rf-form' }, [tit, txt, ajustes, el('div', { class: 'rf-acoes' }, acoes)]));
+    /* quadro da IA: separado do texto, lê o que está escrito e propõe (inserir · substituir · descartar) */
+    if (podeEd && RF.iaTermos) area.appendChild(RF.iaTermos.painel(t, v, function () { return { titulo: tit.valor(), texto: txt.valor() }; }));
+    if (RF.iaTermos) area.appendChild(RF.iaTermos.secaoHistorico(t, v, podeEd));
     area.appendChild(ui.secao(T('Versões', 'Versions'), [ui.tabela([
       { id: 'v', nome: T('Versão', 'Version'), valor: function (x) { return 'v' + x.versao; } },
       { id: 'e', nome: T('Estado', 'State'), desenhar: function (x) { return seloTermo(x.estado); } },
       { id: 'a', nome: T('Autor', 'Author'), valor: function (x) { return x.autor; } },
       { id: 'c', nome: T('Criada', 'Created'), desenhar: function (x) { return U.data(x.criadoEm); } },
       { id: 'ap', nome: T('Aprovada por', 'Approved by'), valor: function (x) { return x.aprovador ? x.aprovador + ' · ' + U.data(x.aprovadoEm) : '—'; } },
-      { id: 'p', nome: T('Publicada', 'Published'), desenhar: function (x) { return x.publicadoEm ? U.data(x.publicadoEm) : '—'; } }
+      { id: 'p', nome: T('Publicada', 'Published'), desenhar: function (x) { return x.publicadoEm ? U.data(x.publicadoEm) : '—'; } },
+      { id: 'd', nome: T('Devoluções', 'Returns'), valor: function (x) { return (x.devolucoes || []).map(function (dv) { return U.data(dv.quando) + ' · ' + nomePorEmail(dv.quem) + ': ' + dv.motivo; }).join(' | ') || '—'; } }
     ], t.versoes.slice().reverse())]));
   }
 
