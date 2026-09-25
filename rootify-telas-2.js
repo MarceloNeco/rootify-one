@@ -888,6 +888,22 @@
     var podeEd = RF.pode('integracoes:editar');
     var cfg = C.obj('config'); cfg.github = cfg.github || {};
     RF.pagina(area, 'integracoes', T('Chaves e tokens ficam cifrados dentro do cofre deste aparelho. Nunca vão para o código nem para os arquivos publicados.', 'Keys and tokens stay encrypted inside this device\'s vault. They never go into the code or the published files.'));
+    /* chaves de IA: o cofre e o guia sao do modulo comum (os apps herdam o mesmo) */
+    if (raiz.DGO && raiz.DGO.ia && raiz.DGO.ia.capacidades) {
+      if (!RF._ouveChavesIA) {   /* quando o cofre muda, a lista aqui acompanha */
+        RF._ouveChavesIA = true;
+        ['dgo:ia-chaves', 'dgo:ia-uso'].forEach(function (ev) { raiz.document.addEventListener(ev, function () { if (RF.Rota.atual().modulo === 'integracoes') RF.renderizar(); }); });
+      }
+      var caps = raiz.DGO.ia.capacidades();
+      var linhas = caps.map(function (c) {
+        var pid = raiz.DGO.ia.provedorPara(c.id), pr = pid && raiz.DGO.ia.provedores(c.id).filter(function (x) { return x.id === pid; })[0];
+        return el('li', {}, [c.icone + ' ' + c.nome + ': ', pr && (pr.temChave || pr.semChave) ? el('b', { texto: pr.nome }) : ui.selo(T('nenhuma', 'none'), 'cinza')]);
+      });
+      area.appendChild(ui.secao(T('Chaves de IA (texto, voz → texto, texto → voz, imagens)', 'AI keys (text, speech → text, text → speech, images)'), [
+        el('p', { class: 'rf-dica', texto: T('O guia passo a passo abre o site de cada provedor, mostra onde clicar, explica os limites do plano grátis e testa a chave. Vale igual em todos os apps.', 'The step-by-step guide opens each provider\'s site, shows where to click, explains the free-plan limits and tests the key. Same in every app.') }),
+        el('ul', {}, linhas)
+      ], [ui.botao('🔑 ' + T('Abrir o cofre e o guia', 'Open the vault and the guide'), function () { raiz.DGO.ia.guia(); }, 'pri')]));
+    }
     var dono = ui.entrada(cfg.github.dono, { attrs: { disabled: !podeEd } }), repo = ui.entrada(cfg.github.repo, { attrs: { disabled: !podeEd } }), ramo = ui.entrada(cfg.github.ramo || 'main', { attrs: { disabled: !podeEd } });
     var token = ui.entrada('', { tipo: 'password', attrs: { disabled: !podeEd, autocomplete: 'off', placeholder: cfg.github.token ? '•••••••• ' + T('(guardado; cole outro para trocar)', '(stored; paste another to replace)') : 'github_pat_…' } });
     var teste = el('p', { class: 'rf-dica', 'aria-live': 'polite' });

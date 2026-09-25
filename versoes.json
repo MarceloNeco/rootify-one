@@ -2,6 +2,25 @@
   "app": "rootify-one",
   "versoes": [
     {
+      "versao": "0.1.9",
+      "data": "2026-09-25",
+      "hora": "16:25:28",
+      "itens": {
+        "pt": [
+          "Cofre de chaves de IA novo (módulo comum, vale para todos os apps): filtro por uso (✍️ texto, 🎤 voz → texto, 🔊 texto → voz, 🖼️ imagens), 13 provedores com selo grátis/pago/pede cartão, limites do plano grátis e para que cada um serve.",
+          "Guia passo a passo por provedor: botão que abre o site, passos com ilustração (trocável por print seu: guia-<provedor>-<n>.png), colar chave, “Salvar e testar” confere o formato e testa no provedor.",
+          "“Usar para…”: escolha de qual IA vale para texto, voz → texto e texto → voz. Os apps leem por DGO.ia.provedorPara('stt') e chavePara('tts'). Voz do aparelho entra como opção sem chave.",
+          "Integrações e chaves: resumo do que está em uso e botão para abrir o cofre e o guia."
+        ],
+        "en": [
+          "New AI key vault (shared module, same in every app): filter by use (✍️ text, 🎤 speech → text, 🔊 text → speech, 🖼️ images), 13 providers with free/paid/asks-for-card badges, free-plan limits and what each is good for.",
+          "Step-by-step guide per provider: a button that opens the site, illustrated steps (replaceable by your own screenshot: guia-<provider>-<n>.png), paste key, “Save and test” checks the format and tests with the provider.",
+          "“Use for…”: choose which AI serves text, speech → text and text → speech. Apps read it via DGO.ia.provedorPara('stt') and chavePara('tts'). Device voice is a no-key option.",
+          "Integrations and keys: summary of what is in use and a button to open the vault and the guide."
+        ]
+      }
+    },
+    {
       "versao": "0.1.8",
       "data": "2026-09-25",
       "hora": "13:15:59",

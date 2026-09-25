@@ -21,7 +21,7 @@
 (function (raiz) {
   'use strict';
 
-  var VERSAO = '1.0.1';
+  var VERSAO = '1.1.0';
   if (raiz.DGO && raiz.DGO.__carregado) { return; }
 
   /* ------------------------------------------------------------------
@@ -327,6 +327,24 @@
       'border-radius:0 0 11px 11px;margin-top:-4px;background:rgba(0,0,0,.15);}',
       '.dgo-selo-ok{background:rgba(34,197,94,.18) !important;color:#86efac !important;}',
       '.dgo-selo-pago{background:rgba(148,163,184,.18) !important;color:#cbd5e1 !important;}',
+      '.dgo-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 6px;}',
+      '.dgo-chip{font:inherit;font-size:12.5px;font-weight:700;padding:7px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.18);',
+      'background:transparent;color:#e2e8f0;cursor:pointer;min-height:34px;}',
+      '.dgo-chip.dgo-on{background:var(--dgo-cor);color:#04121f;border-color:var(--dgo-cor);}',
+      '.dgo-cap{font-size:13px;line-height:1;}',
+      '.dgo-serve{margin:4px 0 8px;font-size:13.5px;color:#e2e8f0;}',
+      '.dgo-guia{margin:10px 0;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:6px 10px;}',
+      '.dgo-guia summary{cursor:pointer;font-weight:700;font-size:13.5px;padding:4px 0;}',
+      '.dgo-guia-lista{padding-left:22px;margin:6px 0 0;}',
+      '.dgo-guia-lista li{margin:0 0 12px;}',
+      '.dgo-guia-lista li p{margin:0 0 6px;font-size:13.5px;line-height:1.45;}',
+      '.dgo-guia-ilu{margin:0;max-width:300px;}',
+      '.dgo-guia-ilu img,.dgo-guia-ilu svg{display:block;width:100%;height:auto;border-radius:10px;}',
+      '.dgo-campo{position:relative;}',
+      '.dgo-olho{position:absolute;right:6px;bottom:6px;width:34px;height:34px;border:0;border-radius:8px;background:transparent;color:#94a3b8;cursor:pointer;font-size:16px;}',
+      '.dgo-usar{flex-wrap:wrap;}.dgo-usar .dgo-b{width:auto;flex:1 1 auto;}',
+      '.dgo-b.dgo-b2.dgo-on{border-color:var(--dgo-cor);color:var(--dgo-cor);}',
+      '@media (prefers-color-scheme:light){.dgo-guia-ilu svg{filter:none;}}',
       '.dgo-caixa select{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;',
       'border:1px solid rgba(255,255,255,.16);background:#0b1220;color:#e2e8f0;font-size:15px;font-family:inherit;}',
       /* ---------- wizard ---------- */
@@ -649,6 +667,26 @@
     semInternet: ['Sem internet agora. O resto do app continua funcionando.',
                   'No internet right now. The rest of the app keeps working.'],
     cofreChaves: ['Chaves de IA', 'AI keys'],
+    tudo: ['Tudo', 'All'],
+    emUsoAgora: ['Em uso agora', 'In use now'],
+    limitesTit: ['Limites', 'Limits'],
+    contaTit: ['Conta', 'Account'],
+    abrirSite: ['Abrir o site', 'Open the site'],
+    guiaPasso: ['Guia passo a passo', 'Step-by-step guide'],
+    guiaPrintDica: ['Dica para quem administra: um print seu no lugar do desenho é só pôr um arquivo {arq} na raiz do app.',
+                    'Tip for admins: to show your own screenshot instead of the drawing, put a file {arq} in the app root.'],
+    suaChave: ['Sua chave', 'Your key'],
+    umaVez: ['aparece só uma vez!', 'shows only once!'],
+    salvarTestar: ['Salvar e testar', 'Save and test'],
+    mostrarChave: ['Mostrar ou esconder a chave', 'Show or hide the key'],
+    testando: ['Testando a chave com o provedor…', 'Testing the key with the provider…'],
+    chaveOk: ['✓ Chave aceita. Pronto para usar.', '✓ Key accepted. Ready to use.'],
+    chaveSalva: ['Chave salva.', 'Key saved.'],
+    chaveRecusada: ['O provedor recusou a chave. Confira se copiou inteira, ou crie outra no site.', 'The provider rejected the key. Check you copied it whole, or create another on the site.'],
+    corsAviso: ['Chave salva, mas o teste não passou pelo navegador. Pode ser bloqueio do provedor: tente usar a IA normalmente.', 'Key saved, but the test could not go through the browser. It may be a provider block: try using the AI normally.'],
+    usarPara: ['Usar para', 'Use for'],
+    pedeCartao: ['pede cartão', 'asks for a card'],
+    chaveNuncaChat: ['Nunca cole a chave em chat, e-mail ou arquivo: ela é como uma senha.', 'Never paste the key in a chat, e-mail or file: it is like a password.'],
     cofreExplica: ['A chave é sua e fica guardada só neste navegador. Vale para os seus apps, e não passa por servidor nenhum além do próprio provedor.',
                    'The key is yours and is kept in this browser only. It works across your apps and goes to no server other than the provider itself.'],
     ondePegar: ['Onde pegar a chave do', 'Where to get the key for'],
@@ -4060,7 +4098,7 @@
 
   var PROVEDORES = {
     openrouter: {
-      nome: 'OpenRouter', gratis: true, ordem: 1,
+      nome: 'OpenRouter', gratis: true, ordem: 3,
       onde: 'https://openrouter.ai/keys',
       base: 'https://openrouter.ai/api/v1',
       modelo: 'openrouter/free',      /* roteador que escolhe um modelo gratis disponivel */
@@ -4080,7 +4118,7 @@
       listar: function (chave) { return listarCompativel(this.base, chave); }
     },
     gemini: {
-      nome: 'Google Gemini', gratis: true, ordem: 3,
+      nome: 'Google Gemini', gratis: true, ordem: 1,
       onde: 'https://aistudio.google.com/apikey',
       modelo: 'gemini-2.0-flash',
       nota: { pt: 'Plano grátis com limites que o Google mostra no AI Studio. Confira o aviso de privacidade ao criar a chave.',
@@ -4127,7 +4165,7 @@
       listar: function (chave) { return listarCompativel(this.base, chave); }
     },
     openai: {
-      nome: 'OpenAI', gratis: false, ordem: 5,
+      nome: 'OpenAI', gratis: false, ordem: 10,
       onde: 'https://platform.openai.com/api-keys',
       base: 'https://api.openai.com/v1',
       modelo: 'gpt-4o-mini',
@@ -4136,7 +4174,7 @@
       listar: function (chave) { return listarCompativel(this.base, chave); }
     },
     anthropic: {
-      nome: 'Anthropic Claude', gratis: false, ordem: 6,
+      nome: 'Anthropic Claude', gratis: false, ordem: 11,
       onde: 'https://console.anthropic.com/settings/keys',
       modelo: 'claude-3-5-haiku-20241022',
       nota: { pt: 'Pago por uso, sem plano grátis.', en: 'Pay per use, no free plan.' },
@@ -4171,7 +4209,7 @@
       }
     },
     personalizado: {
-      nome: 'Outro (formato OpenAI)', gratis: null, ordem: 9,
+      nome: 'Outro (formato OpenAI)', gratis: null, ordem: 13,
       onde: '',
       base: '',                          /* a pessoa cola o endereco */
       modelo: '',
@@ -4207,6 +4245,7 @@
     },
     temChave: function (prov) {
       prov = prov || IA.provedor();
+      if (PROVEDORES[prov] && PROVEDORES[prov].semChave) return true;
       /* um proxy no servidor dispensa chave no navegador */
       if (IA.proxyDe(prov)) return true;
       return !!IA.chave(prov);
@@ -4243,11 +4282,13 @@
     proxyDe: function (prov) { return (cfg.ia.proxy && cfg.ia.proxy[prov]) || ''; },
 
     provedoresProntos: function () {
-      return Object.keys(PROVEDORES).filter(function (p) { return IA.temChave(p); })
+      completarProvedores();
+      return Object.keys(PROVEDORES).filter(function (p) { return !PROVEDORES[p].soVoz && IA.temChave(p); })
         .sort(function (a, b) { return (PROVEDORES[a].ordem || 9) - (PROVEDORES[b].ordem || 9); });
     },
     provedoresOrdenados: function () {
-      return Object.keys(PROVEDORES).sort(function (a, b) { return (PROVEDORES[a].ordem || 9) - (PROVEDORES[b].ordem || 9); });
+      completarProvedores();
+      return Object.keys(PROVEDORES).filter(function (p) { return !PROVEDORES[p].soVoz; }).sort(function (a, b) { return (PROVEDORES[a].ordem || 9) - (PROVEDORES[b].ordem || 9); });
     },
 
     listarModelos: function (prov) {
@@ -4376,107 +4417,414 @@
     return null;
   }
 
-  function abrirChaves(provedorAberto) {
-    var aberto = provedorAberto || IA.provedor();
+  /* ------------------------------------------------------------------
+     GUIA DE CHAVES: o que cada provedor faz, como pegar a chave (passo a
+     passo para leigo), limites do plano gratis e teste da chave.
+     Cada app herda isto: e o mesmo cofre e o mesmo guia em todos.
+     Os passos vem com uma ilustracao desenhada; para trocar por um print
+     de verdade, basta por na raiz do app um arquivo guia-<provedor>-<n>.png
+     (ex.: guia-groq-2.png) - se existir, ele aparece no lugar do desenho.
+     ------------------------------------------------------------------ */
+  var CAPS = {
+    texto: { icone: '✍️', pt: 'Texto e escrita', en: 'Text and writing',
+             expl: { pt: 'Perguntar, escrever, resumir, melhorar textos, sugerir respostas.', en: 'Ask, write, summarise, improve texts, suggest replies.' } },
+    stt:   { icone: '🎤', pt: 'Voz → texto', en: 'Speech → text',
+             expl: { pt: 'Transcrever áudio e ditado (quando o navegador não devolve o texto).', en: 'Transcribe audio and dictation (when the browser gives no text).' } },
+    tts:   { icone: '🔊', pt: 'Texto → voz', en: 'Text → speech',
+             expl: { pt: 'Ler histórias, tutoriais e avisos em voz alta com voz natural.', en: 'Read stories, tutorials and notices aloud with a natural voice.' } },
+    visao: { icone: '🖼️', pt: 'Imagens e documentos', en: 'Images and documents',
+             expl: { pt: 'Entender fotos, rótulos, exames e PDFs (OCR com IA).', en: 'Understand photos, labels, lab results and PDFs (AI OCR).' } }
+  };
+
+  /* passos comuns, para nao repetir texto em cada provedor */
+  function P(pt, en, ilu) { return { pt: pt, en: en, ilu: ilu || 'site' }; }
+  function passosPadrao(nome, botaoConta, botaoChave, rotuloNome, extra) {
+    var ps = [
+      P('Toque em “Abrir o site”. Ele abre em outra aba; esta tela continua aqui esperando.',
+        'Tap “Open the site”. It opens in another tab; this screen stays here waiting.', 'abrir'),
+      P('Crie a conta (ou entre): ' + botaoConta + '. Use um e-mail seu; não precisa de cartão.',
+        'Create the account (or sign in): ' + botaoConta + '. Use your own e-mail; no card needed.', 'conta'),
+      P('Na página de chaves, toque em “' + botaoChave + '”.' + (rotuloNome ? ' Se pedir um nome, escreva “' + rotuloNome + '”.' : ''),
+        'On the keys page, tap “' + botaoChave + '”.' + (rotuloNome ? ' If it asks for a name, type “' + rotuloNome + '”.' : ''), 'botao'),
+      P('A chave aparece UMA vez. Toque no botão de copiar ao lado dela (não feche antes de copiar).',
+        'The key shows ONCE. Tap the copy button next to it (do not close before copying).', 'copiar'),
+      P('Volte para esta aba, cole a chave no campo abaixo e toque em “Salvar e testar”.',
+        'Come back to this tab, paste the key in the field below and tap “Save and test”.', 'colar')
+    ];
+    if (extra) ps.splice(2, 0, extra);
+    return ps;
+  }
+  function limiteTxt(pr) { return pr.limite ? (pr.limite[Idioma.atual] || pr.limite.pt) : ''; }
+
+  /* provedores que nao conversam (so voz), mais os que conversam e tambem
+     fazem voz - a lista de chat continua sendo os que tem cap 'texto' */
+  function completarProvedores() {
+    var X = PROVEDORES;
+    X.openrouter.cap = ['texto']; X.openrouter.prefixo = 'sk-or-';
+    X.openrouter.conta = { pt: 'Google, GitHub ou e-mail', en: 'Google, GitHub or e-mail' };
+    X.openrouter.limite = { pt: 'Grátis nos modelos com “:free”: ~20 pedidos por minuto e 50 por dia (1.000/dia se um dia comprar US$ 10 de crédito). Sem cartão.',
+                            en: 'Free on “:free” models: ~20 requests per minute and 50 per day (1,000/day if you ever buy US$ 10 of credit). No card.' };
+    X.openrouter.passos = passosPadrao('OpenRouter', 'Sign in → Google ou e-mail', 'Create API Key', 'SolverONE');
+    X.openrouter.serve = { pt: 'Um cadastro só dá acesso a dezenas de IAs (Llama, Qwen, Gemma, DeepSeek…). Ótimo para começar.', en: 'One sign-up gives access to dozens of AIs (Llama, Qwen, Gemma, DeepSeek…). Great to start.' };
+
+    X.groq.cap = ['texto', 'stt']; X.groq.prefixo = 'gsk_';
+    X.groq.conta = { pt: 'Google, GitHub ou e-mail', en: 'Google, GitHub or e-mail' };
+    X.groq.limite = { pt: 'Grátis e muito rápido: ~30 pedidos por minuto e até 1.000 por dia no texto; transcrição (Whisper) com ~2 h de áudio por hora. Sem cartão.',
+                      en: 'Free and very fast: ~30 requests per minute and up to 1,000 per day for text; transcription (Whisper) with ~2 h of audio per hour. No card.' };
+    X.groq.passos = passosPadrao('Groq', 'Google, GitHub ou e-mail', 'Create API Key', 'SolverONE');
+    X.groq.serve = { pt: 'Melhor opção grátis para voz → texto (Whisper) e respostas instantâneas.', en: 'Best free option for speech → text (Whisper) and instant answers.' };
+    X.groq.stt = { url: 'https://api.groq.com/openai/v1/audio/transcriptions', modelo: 'whisper-large-v3-turbo' };
+
+    X.gemini.cap = ['texto', 'stt', 'tts', 'visao']; X.gemini.prefixo = 'AIza';
+    X.gemini.conta = { pt: 'conta Google', en: 'Google account' };
+    X.gemini.limite = { pt: 'Grátis (AI Studio): centenas de pedidos por dia no Flash e Flash-Lite; a cota exata aparece na sua conta. Sem cartão. A voz (TTS) e a leitura de imagens também entram no grátis.',
+                        en: 'Free (AI Studio): hundreds of requests per day on Flash and Flash-Lite; the exact quota shows in your account. No card. Voice (TTS) and image reading are free too.' };
+    X.gemini.passos = passosPadrao('Google AI Studio', 'entrar com a conta Google e aceitar os termos', 'Create API key / Criar chave de API', null,
+      P('Se pedir um projeto, toque em “Create API key in new project” (ele cria um projeto para você).',
+        'If it asks for a project, tap “Create API key in new project” (it creates one for you).', 'botao'));
+    X.gemini.serve = { pt: 'A mais completa grátis: texto, ouvir áudio, falar (voz natural) e ler imagens com uma chave só.', en: 'The most complete free one: text, hearing audio, speaking (natural voice) and reading images with a single key.' };
+    X.gemini.tts = { modelo: 'gemini-2.5-flash-preview-tts' };
+
+    X.mistral.cap = ['texto', 'stt', 'visao'];
+    X.mistral.conta = { pt: 'e-mail + confirmação por celular', en: 'e-mail + phone verification' };
+    X.mistral.limite = { pt: 'Plano “Experiment” grátis (pede número de celular): ~1 pedido por segundo e cota mensal. Sem cartão. Tem transcrição (Voxtral) e OCR.',
+                         en: 'Free “Experiment” plan (asks for a phone number): ~1 request per second and a monthly quota. No card. Has transcription (Voxtral) and OCR.' };
+    X.mistral.passos = passosPadrao('Mistral', 'e-mail ou Google; depois escolha o plano Experiment (grátis)', 'Nova chave / Create new key', 'SolverONE');
+    X.mistral.serve = { pt: 'Boa em português e em ler documentos (OCR).', en: 'Good in Portuguese and at reading documents (OCR).' };
+    X.mistral.stt = { url: 'https://api.mistral.ai/v1/audio/transcriptions', modelo: 'voxtral-mini-latest' };
+
+    X.openai.cap = ['texto', 'stt', 'tts', 'visao']; X.openai.prefixo = 'sk-';
+    X.openai.conta = { pt: 'e-mail, Google ou Apple + cartão', en: 'e-mail, Google or Apple + card' };
+    X.openai.limite = { pt: 'Pago por uso (mínimo US$ 5 de crédito). Sem plano grátis. Tem voz → texto (Whisper), texto → voz e imagens.',
+                        en: 'Pay per use (US$ 5 minimum credit). No free plan. Has speech → text (Whisper), text → speech and images.' };
+    X.openai.passos = passosPadrao('OpenAI', 'e-mail, Google ou Apple; depois Billing → Add credit (US$ 5)', 'Create new secret key', 'SolverONE');
+    X.openai.serve = { pt: 'Tudo numa conta só, com qualidade alta. Custa pouco para uso pessoal.', en: 'Everything in one account, high quality. Cheap for personal use.' };
+    X.openai.stt = { url: 'https://api.openai.com/v1/audio/transcriptions', modelo: 'whisper-1' };
+    X.openai.tts = { url: 'https://api.openai.com/v1/audio/speech', modelo: 'gpt-4o-mini-tts' };
+
+    X.anthropic.cap = ['texto', 'visao']; X.anthropic.prefixo = 'sk-ant-';
+    X.anthropic.conta = { pt: 'e-mail ou Google + cartão', en: 'e-mail or Google + card' };
+    X.anthropic.limite = { pt: 'Pago por uso (compra de crédito antes). Sem plano grátis.', en: 'Pay per use (buy credit first). No free plan.' };
+    X.anthropic.passos = passosPadrao('Anthropic Console', 'e-mail ou Google; depois Plans & billing → comprar crédito', 'Create Key', 'SolverONE');
+    X.anthropic.serve = { pt: 'Claude: muito boa em textos longos e cuidadosos (termos, políticas).', en: 'Claude: very good at long, careful texts (terms, policies).' };
+
+    X.personalizado.cap = ['texto'];
+    X.personalizado.limite = { pt: 'Depende do serviço. Serve para Cerebras, Together, Hugging Face, um Ollama na sua rede…', en: 'Depends on the service. For Cerebras, Together, Hugging Face, an Ollama on your network…' };
+    X.personalizado.passos = [P('Cole o endereço da API (termina em /v1), a chave e o nome do modelo, como o serviço informa.', 'Paste the API address (ends in /v1), the key and the model name, as the service states.', 'colar')];
+
+    X.cerebras = {
+      nome: 'Cerebras', gratis: null, ordem: 9, cap: ['texto'], prefixo: 'csk-',
+      onde: 'https://cloud.cerebras.ai/', base: 'https://api.cerebras.ai/v1', modelo: 'llama-3.3-70b',
+      conta: { pt: 'e-mail ou Google + cartão (não cobra)', en: 'e-mail or Google + card (not charged)' },
+      limite: { pt: 'US$ 5 de crédito por 30 dias, mas pede um cartão para ativar. Muito rápido.', en: 'US$ 5 credit for 30 days, but asks for a card to activate. Very fast.' },
+      nota: { pt: 'Crédito inicial de US$ 5 (30 dias); pede cartão.', en: 'US$ 5 starting credit (30 days); asks for a card.' },
+      passos: passosPadrao('Cerebras Cloud', 'e-mail ou Google; adicionar cartão em Billing', 'Create API Key', 'SolverONE'),
+      serve: { pt: 'Respostas quase instantâneas.', en: 'Near-instant answers.' },
+      chamar: function (chave, modelo, sistema, msgs, limite) { return chamarCompativel(this.base, chave, modelo, sistema, msgs, null, limite); },
+      listar: function (chave) { return listarCompativel(this.base, chave); }
+    };
+    X.deepseek = {
+      nome: 'DeepSeek', gratis: false, ordem: 12, cap: ['texto'], prefixo: 'sk-',
+      onde: 'https://platform.deepseek.com/api_keys', base: 'https://api.deepseek.com/v1', modelo: 'deepseek-chat',
+      conta: { pt: 'e-mail ou Google + crédito', en: 'e-mail or Google + credit' },
+      limite: { pt: 'Pago, mas muito barato (centavos por milhão de palavras). Sem plano grátis.', en: 'Paid but very cheap (cents per million words). No free plan.' },
+      nota: { pt: 'Pago por uso, barato.', en: 'Pay per use, cheap.' },
+      passos: passosPadrao('DeepSeek', 'e-mail ou Google; depois Top up (comprar crédito)', 'Create new API key', 'SolverONE'),
+      serve: { pt: 'Barata e boa para textos longos.', en: 'Cheap and good for long texts.' },
+      chamar: function (chave, modelo, sistema, msgs, limite) { return chamarCompativel(this.base, chave, modelo, sistema, msgs, null, limite); },
+      listar: function (chave) { return listarCompativel(this.base, chave); }
+    };
+    /* so voz: nao entram na lista de chat */
+    X.deepgram = {
+      nome: 'Deepgram', gratis: true, ordem: 6, cap: ['stt'], soVoz: true,
+      onde: 'https://console.deepgram.com/',
+      conta: { pt: 'e-mail, Google ou GitHub', en: 'e-mail, Google or GitHub' },
+      limite: { pt: 'US$ 200 de crédito ao criar a conta (dá centenas de horas de transcrição). Sem cartão. Depois, pago por minuto.',
+                en: 'US$ 200 credit on sign-up (hundreds of hours of transcription). No card. Then pay per minute.' },
+      nota: { pt: 'US$ 200 de crédito inicial; sem cartão.', en: 'US$ 200 starting credit; no card.' },
+      passos: passosPadrao('Deepgram Console', 'e-mail, Google ou GitHub', 'Create a New API Key', 'SolverONE'),
+      serve: { pt: 'Transcrição rápida e precisa, inclusive em tempo real.', en: 'Fast, accurate transcription, including real time.' },
+      stt: { url: 'https://api.deepgram.com/v1/listen?model=nova-3&language=pt&smart_format=true', auth: 'Token' },
+      testar: function (chave) { return fetch('https://api.deepgram.com/v1/projects', { headers: { Authorization: 'Token ' + chave } }).then(lerResposta); }
+    };
+    X.assemblyai = {
+      nome: 'AssemblyAI', gratis: true, ordem: 7, cap: ['stt'], soVoz: true,
+      onde: 'https://www.assemblyai.com/app/api-keys',
+      conta: { pt: 'e-mail, Google ou GitHub', en: 'e-mail, Google or GitHub' },
+      limite: { pt: 'US$ 50 de crédito ao criar a conta (dezenas de horas). Sem cartão. Depois, pago por hora.',
+                en: 'US$ 50 credit on sign-up (tens of hours). No card. Then pay per hour.' },
+      nota: { pt: 'US$ 50 de crédito inicial; sem cartão.', en: 'US$ 50 starting credit; no card.' },
+      passos: passosPadrao('AssemblyAI', 'e-mail, Google ou GitHub', 'Copy API key', null),
+      serve: { pt: 'Transcrição com resumo e identificação de quem fala.', en: 'Transcription with summary and speaker identification.' },
+      stt: { url: 'https://api.assemblyai.com/v2', auth: 'plain' },
+      testar: function (chave) { return fetch('https://api.assemblyai.com/v2/transcript?limit=1', { headers: { authorization: chave } }).then(lerResposta); }
+    };
+    X.elevenlabs = {
+      nome: 'ElevenLabs', gratis: true, ordem: 8, cap: ['tts'], soVoz: true,
+      onde: 'https://elevenlabs.io/app/settings/api-keys',
+      conta: { pt: 'e-mail ou Google', en: 'e-mail or Google' },
+      limite: { pt: 'Grátis: ~10 mil caracteres por mês (uns 10 minutos de áudio), só para uso pessoal. Planos pagos a partir de US$ 5/mês.',
+                en: 'Free: ~10k characters per month (about 10 minutes of audio), personal use only. Paid plans from US$ 5/month.' },
+      nota: { pt: '~10 min de áudio por mês grátis.', en: '~10 min of audio per month free.' },
+      passos: passosPadrao('ElevenLabs', 'e-mail ou Google', 'Create API Key', 'SolverONE'),
+      serve: { pt: 'As vozes mais naturais para ler histórias.', en: 'The most natural voices for reading stories.' },
+      tts: { url: 'https://api.elevenlabs.io/v1/text-to-speech', auth: 'xi-api-key' },
+      testar: function (chave) { return fetch('https://api.elevenlabs.io/v1/user', { headers: { 'xi-api-key': chave } }).then(lerResposta); }
+    };
+    X.aparelho = {
+      nome: { pt: 'Voz do aparelho', en: 'Device voice' }, gratis: true, ordem: 5, cap: ['tts', 'stt'], soVoz: true, semChave: true,
+      onde: '',
+      limite: { pt: 'Grátis e sem chave: usa a voz e o reconhecimento que já vêm no celular ou computador. Qualidade varia por aparelho.',
+                en: 'Free and no key: uses the voice and recognition built into the phone or computer. Quality varies by device.' },
+      passos: [P('Não precisa de chave. Para melhorar a voz no Android: Configurações → Conversão de texto em voz → instalar dados de voz em Português (Brasil).',
+                 'No key needed. To improve the voice on Android: Settings → Text-to-speech → install Portuguese (Brazil) voice data.', 'site')],
+      serve: { pt: 'Plano B que sempre funciona, até sem internet.', en: 'Plan B that always works, even offline.' }
+    };
+  }
+
+  /* validacao leve: so o formato, para pegar chave colada pela metade */
+  function chaveParece(prov, valor) {
+    var pr = PROVEDORES[prov]; valor = String(valor || '').trim();
+    if (!valor) return { ok: false, pt: 'Cole a chave.', en: 'Paste the key.' };
+    if (/\s/.test(valor)) return { ok: false, pt: 'A chave tem espaço ou quebra de linha no meio: copie de novo, inteira.', en: 'The key has a space or line break inside: copy it again, whole.' };
+    if (valor.length < 20) return { ok: false, pt: 'Curta demais: parece que faltou um pedaço.', en: 'Too short: looks like part is missing.' };
+    if (pr && pr.prefixo && valor.indexOf(pr.prefixo) !== 0) return { ok: false, pt: 'Chave do ' + nomeProv(pr) + ' começa com “' + pr.prefixo + '”. Confira se copiou do site certo.', en: nomeProv(pr) + ' keys start with “' + pr.prefixo + '”. Check you copied from the right site.' };
+    return { ok: true };
+  }
+  function nomeProv(pr) { return typeof pr.nome === 'string' ? pr.nome : (pr.nome[Idioma.atual] || pr.nome.pt); }
+  function testarChave(prov, chave) {
+    var pr = PROVEDORES[prov];
+    if (pr.semChave) return Promise.resolve({ ok: true });
+    if (pr.testar) return pr.testar(chave).then(function () { return { ok: true }; });
+    if (pr.listar) return pr.listar(chave).then(function (l) { return { ok: true, modelos: l }; });
+    return Promise.resolve({ ok: true, semTeste: true });
+  }
+
+  /* escolha por uso: texto continua sendo IA.provedor(); voz tem a sua */
+  var PorUso = {
+    ler: function () { return Guardar.ler('ia-por-uso', {}, true) || {}; },
+    definir: function (cap, prov) { var m = PorUso.ler(); if (prov) m[cap] = prov; else delete m[cap]; Guardar.gravar('ia-por-uso', m, true);
+      d.dispatchEvent(new CustomEvent('dgo:ia-uso', { detail: { cap: cap, provedor: prov } })); },
+    provedor: function (cap) {
+      if (cap === 'texto') return IA.provedor();
+      var m = PorUso.ler(), p = m[cap];
+      if (p && PROVEDORES[p] && (PROVEDORES[p].semChave || IA.temChave(p))) return p;
+      var prontos = Object.keys(PROVEDORES).filter(function (k) { var pr = PROVEDORES[k]; return (pr.cap || []).indexOf(cap) !== -1 && !pr.semChave && IA.temChave(k); })
+        .sort(function (a, b) { return (PROVEDORES[a].ordem || 9) - (PROVEDORES[b].ordem || 9); });
+      if (prontos.length) return prontos[0];
+      return (cap === 'tts' || cap === 'stt') ? 'aparelho' : '';
+    },
+    chave: function (cap) { var p = PorUso.provedor(cap); return p ? IA.chave(p) : ''; }
+  };
+
+  /* ---- ilustracao desenhada de cada passo (SVG), ou o print do app ---- */
+  function iluPasso(prov, n, tipo, rotulo) {
+    var pr = PROVEDORES[prov], nome = nomeProv(pr);
+    var cor = 'var(--dgo-cor)';
+    function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+    var miolo = '';
+    if (tipo === 'abrir') {
+      miolo = '<rect x="20" y="52" width="200" height="44" rx="10" fill="' + cor + '"/><text x="120" y="80" font-size="15" font-weight="700" text-anchor="middle" fill="#04121f">' + esc(t('abrirSite')) + ' ↗</text>' +
+        '<text x="120" y="122" font-size="11" text-anchor="middle" fill="#94a3b8">' + esc(nome) + '</text>';
+    } else if (tipo === 'conta') {
+      miolo = '<rect x="30" y="40" width="180" height="26" rx="6" fill="#0b1220" stroke="#334155"/><text x="40" y="57" font-size="11" fill="#64748b">e-mail</text>' +
+        '<rect x="30" y="74" width="180" height="26" rx="6" fill="#0b1220" stroke="#334155"/><text x="40" y="91" font-size="11" fill="#64748b">••••••••</text>' +
+        '<rect x="30" y="108" width="180" height="26" rx="6" fill="' + cor + '"/><text x="120" y="125" font-size="12" font-weight="700" text-anchor="middle" fill="#04121f">Sign up / Log in</text>';
+    } else if (tipo === 'botao') {
+      var r = rotulo || 'Create API Key';
+      miolo = '<text x="24" y="52" font-size="12" fill="#94a3b8">API keys</text><line x1="24" y1="60" x2="216" y2="60" stroke="#334155"/>' +
+        '<rect x="24" y="72" width="192" height="30" rx="7" fill="' + cor + '"/><text x="120" y="92" font-size="12" font-weight="700" text-anchor="middle" fill="#04121f">+ ' + esc(r) + '</text>' +
+        '<circle cx="204" cy="87" r="16" fill="none" stroke="#f59e0b" stroke-width="3"/>';
+    } else if (tipo === 'copiar') {
+      miolo = '<text x="24" y="50" font-size="11" fill="#94a3b8">' + esc(t('suaChave')) + '</text>' +
+        '<rect x="24" y="60" width="150" height="30" rx="7" fill="#0b1220" stroke="#334155"/><text x="34" y="80" font-size="12" font-family="monospace" fill="#e2e8f0">' + esc((pr.prefixo || 'sk-') + '••••••••') + '</text>' +
+        '<rect x="182" y="60" width="34" height="30" rx="7" fill="' + cor + '"/><text x="199" y="81" font-size="15" text-anchor="middle" fill="#04121f">⎘</text>' +
+        '<circle cx="199" cy="75" r="20" fill="none" stroke="#f59e0b" stroke-width="3"/><text x="120" y="120" font-size="11" text-anchor="middle" fill="#fbbf24">' + esc(t('umaVez')) + '</text>';
+    } else if (tipo === 'colar') {
+      miolo = '<text x="24" y="50" font-size="11" fill="#94a3b8">' + esc(nomeApp()) + ' → ' + esc(t('cofreChaves')) + '</text>' +
+        '<rect x="24" y="60" width="192" height="30" rx="7" fill="#0b1220" stroke="' + cor + '" stroke-width="2"/><text x="34" y="80" font-size="12" font-family="monospace" fill="#e2e8f0">' + esc((pr.prefixo || 'sk-') + '••••••••••••') + '</text>' +
+        '<rect x="24" y="100" width="192" height="28" rx="7" fill="' + cor + '"/><text x="120" y="118" font-size="12" font-weight="700" text-anchor="middle" fill="#04121f">' + esc(t('salvarTestar')) + '</text>';
+    } else {
+      miolo = '<text x="120" y="88" font-size="30" text-anchor="middle">⚙️</text>';
+    }
+    var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 140" role="img" aria-hidden="true">' +
+      '<rect x="0" y="0" width="240" height="140" rx="12" fill="#111a2e" stroke="#334155"/>' +
+      '<rect x="0" y="0" width="240" height="24" rx="12" fill="#1e293b"/><circle cx="14" cy="12" r="4" fill="#ef4444"/><circle cx="26" cy="12" r="4" fill="#f59e0b"/><circle cx="38" cy="12" r="4" fill="#22c55e"/>' +
+      '<text x="120" y="16" font-size="9" text-anchor="middle" fill="#94a3b8">' + esc(tipo === 'colar' ? location.host : (pr.onde || '').replace(/^https?:\/\//, '').replace(/\/.*$/, '')) + '</text>' + miolo + '</svg>';
+    var fig = el('figure', { class: 'dgo-guia-ilu' });
+    var img = el('img', { src: 'guia-' + prov + '-' + n + '.png', alt: '', loading: 'lazy' });
+    img.onerror = function () { fig.innerHTML = svg; };   /* sem print: fica o desenho */
+    fig.appendChild(img);
+    return fig;
+  }
+
+  function abrirChaves(provedorAberto, capInicial) {
+    completarProvedores();
+    var aberto = provedorAberto || '';
+    var filtro = capInicial || Guardar.ler('ia-cofre-filtro', '', true) || '';
+    if (aberto && !PROVEDORES[aberto]) aberto = '';
+
+    function selos(pr) {
+      var s = [];
+      if (pr.gratis === true) s.push(el('em', { class: 'dgo-selo dgo-selo-ok', texto: t('gratis') }));
+      else if (pr.gratis === false) s.push(el('em', { class: 'dgo-selo dgo-selo-pago', texto: t('pago') }));
+      else if (pr.gratis === null && pr.conta) s.push(el('em', { class: 'dgo-selo', texto: t('pedeCartao') }));
+      (pr.cap || []).forEach(function (c) { s.push(el('span', { class: 'dgo-cap', title: CAPS[c][Idioma.atual] || CAPS[c].pt, texto: CAPS[c].icone })); });
+      return s;
+    }
+    function emUsoPara(p) {
+      var usos = [];
+      if (IA.provedor() === p && IA.temChave(p) && (PROVEDORES[p].cap || []).indexOf('texto') !== -1) usos.push(CAPS.texto.icone);
+      ['stt', 'tts'].forEach(function (c) { if ((PROVEDORES[p].cap || []).indexOf(c) !== -1 && PorUso.provedor(c) === p) usos.push(CAPS[c].icone); });
+      return usos;
+    }
+    function reabrir() { abrirModal(montar(), function () { abrirChaves(aberto, filtro); }); }
 
     function montar() {
-      var caixa = el('div', { class: 'dgo-caixa dgo-larga' });
-      caixa.appendChild(el('h2', { texto: t('cofreChaves') }));
-      caixa.appendChild(el('p', { texto: t('cofreExplica') }));
+      var caixa = el('div', { class: 'dgo-caixa dgo-larga dgo-cofre' });
+      caixa.appendChild(el('h2', { texto: '🔑 ' + t('cofreChaves') }));
+      caixa.appendChild(el('p', { class: 'dgo-mini', texto: t('cofreExplica') }));
 
-      IA.provedoresOrdenados().forEach(function (p) {
+      /* filtro: para que serve */
+      var chips = el('div', { class: 'dgo-chips', role: 'tablist' });
+      [['', t('tudo')]].concat(Object.keys(CAPS).map(function (c) { return [c, CAPS[c].icone + ' ' + (CAPS[c][Idioma.atual] || CAPS[c].pt)]; })).forEach(function (o) {
+        chips.appendChild(el('button', { type: 'button', role: 'tab', class: 'dgo-chip' + (filtro === o[0] ? ' dgo-on' : ''), 'aria-selected': filtro === o[0] ? 'true' : 'false', texto: o[1],
+          onclick: function () { filtro = o[0]; Guardar.gravar('ia-cofre-filtro', filtro, true); aberto = ''; reabrir(); } }));
+      });
+      caixa.appendChild(chips);
+      if (filtro && CAPS[filtro]) caixa.appendChild(el('p', { class: 'dgo-mini', texto: CAPS[filtro].expl[Idioma.atual] || CAPS[filtro].expl.pt }));
+
+      /* resumo do que esta em uso */
+      var resumo = ['texto', 'stt', 'tts'].map(function (c) {
+        var p = PorUso.provedor(c), ok = p && (PROVEDORES[p].semChave || IA.temChave(p));
+        return CAPS[c].icone + ' ' + (ok ? nomeProv(PROVEDORES[p]) : '—');
+      }).join('   ');
+      caixa.appendChild(el('p', { class: 'dgo-mini', texto: t('emUsoAgora') + ': ' + resumo }));
+
+      var lista = Object.keys(PROVEDORES).filter(function (p) { return !filtro || (PROVEDORES[p].cap || []).indexOf(filtro) !== -1; })
+        .sort(function (a, b) { return (PROVEDORES[a].ordem || 9) - (PROVEDORES[b].ordem || 9); });
+
+      lista.forEach(function (p) {
         var pr = PROVEDORES[p];
-        var tem = IA.temChave(p);
+        var tem = pr.semChave || IA.temChave(p);
         var ehAberto = (p === aberto);
-
-        var cabecalho = el('button', {
-          type: 'button', class: 'dgo-prov-cab' + (ehAberto ? ' dgo-on' : ''),
-          onclick: function () { aberto = ehAberto ? '' : p; abrirModal(montar(), function () { abrirChaves(aberto); }); }
-        }, [
-          el('span', { class: 'dgo-prov-nome' }, [
-            d.createTextNode(pr.nome + ' '), seloProvedor(pr),
+        var usos = emUsoPara(p);
+        var cab = el('button', { type: 'button', class: 'dgo-prov-cab' + (ehAberto ? ' dgo-on' : ''), 'aria-expanded': ehAberto ? 'true' : 'false',
+          onclick: function () { aberto = ehAberto ? '' : p; reabrir(); } }, [
+          el('span', { class: 'dgo-prov-nome' }, [d.createTextNode(nomeProv(pr) + ' ')].concat(selos(pr)).concat([
             tem ? el('em', { class: 'dgo-selo dgo-selo-ok', texto: '✓' }) : null,
-            (IA.provedor() === p && tem) ? el('em', { class: 'dgo-selo', texto: t('emUso') }) : null
-          ]),
+            usos.length ? el('em', { class: 'dgo-selo', texto: t('emUso') + ' ' + usos.join(' ') }) : null
+          ])),
           el('span', { class: 'dgo-mini', texto: ehAberto ? '▴' : '▾' })
         ]);
-        caixa.appendChild(cabecalho);
+        caixa.appendChild(cab);
         if (!ehAberto) return;
 
         var corpo = el('div', { class: 'dgo-prov-corpo' });
-        var nota = notaProvedor(pr);
-        if (nota) corpo.appendChild(el('p', { texto: nota }));
+        if (pr.serve) corpo.appendChild(el('p', { class: 'dgo-serve', texto: (pr.serve[Idioma.atual] || pr.serve.pt) }));
+        if (pr.limite) corpo.appendChild(el('p', { class: 'dgo-mini' }, [el('b', { texto: t('limitesTit') + ': ' }), d.createTextNode(limiteTxt(pr))]));
+        if (pr.conta) corpo.appendChild(el('p', { class: 'dgo-mini' }, [el('b', { texto: t('contaTit') + ': ' }), d.createTextNode(pr.conta[Idioma.atual] || pr.conta.pt)]));
+
         if (pr.onde) {
-          corpo.appendChild(el('a', { class: 'dgo-mini', href: pr.onde, target: '_blank',
-            rel: 'noopener noreferrer', texto: t('ondePegar') + ' ' + pr.nome + ' ↗',
-            style: { display: 'block', marginBottom: '8px', color: '#7dd3fc' } }));
+          corpo.appendChild(el('a', { class: 'dgo-b', href: pr.onde, target: '_blank', rel: 'noopener noreferrer', style: { textDecoration: 'none' },
+            texto: t('abrirSite') + ' ↗ ' + nomeProv(pr) }));
         }
 
-        if (p === 'personalizado') {
-          var cB = campo(t('endereco'), { type: 'url', placeholder: 'https://…/v1', autocapitalize: 'none', spellcheck: 'false' });
-          cB._input.value = IA.baseDe(p);
-          cB._input.addEventListener('change', function () { IA.definirBase(p, cB._input.value); });
-          corpo.appendChild(cB);
+        /* guia passo a passo, aberto quando ainda nao ha chave */
+        if (pr.passos && pr.passos.length) {
+          var det = el('details', { class: 'dgo-guia' });
+          if (!tem) det.open = true;
+          det.appendChild(el('summary', { texto: '🧭 ' + t('guiaPasso') + ' (' + pr.passos.length + ')' }));
+          var ol = el('ol', { class: 'dgo-guia-lista' });
+          pr.passos.forEach(function (ps, i) {
+            var rot = null;
+            if (ps.ilu === 'botao') { var m = (ps[Idioma.atual] || ps.pt).match(/“([^”]+)”/); rot = m ? m[1].split(' / ')[0] : null; }
+            ol.appendChild(el('li', {}, [el('p', { texto: ps[Idioma.atual] || ps.pt }), iluPasso(p, i + 1, ps.ilu, rot)]));
+          });
+          det.appendChild(ol);
+          det.appendChild(el('p', { class: 'dgo-mini', texto: t('guiaPrintDica').replace('{arq}', 'guia-' + p + '-2.png') }));
+          corpo.appendChild(det);
         }
-
-        var cK = campo(t('chave') + ' — ' + pr.nome, { type: 'password', autocomplete: 'off',
-                       spellcheck: 'false', placeholder: IA.chave(p) ? '••••••••' : '' });
-        cK._input.value = IA.chave(p);
-        corpo.appendChild(cK);
-
-        var cM = campo(t('modelo'), { type: 'text', autocapitalize: 'none', spellcheck: 'false', list: 'dgo-modelos-' + p });
-        cM._input.value = IA.modelo(p);
-        var dl = el('datalist', { id: 'dgo-modelos-' + p });
-        var cache = (Guardar.ler('ia-lista-modelos', {}, true) || {})[p];
-        (cache && cache.modelos || []).forEach(function (m) { dl.appendChild(el('option', { value: m.id })); });
-        cM.appendChild(dl);
-        corpo.appendChild(cM);
 
         var msg = el('div');
-        var l1 = el('div', { class: 'dgo-linha' });
-        l1.appendChild(el('button', { class: 'dgo-b', type: 'button', texto: t('salvar'), onclick: function () {
-          IA.definirChave(p, cK._input.value);
-          IA.definirModelo(p, cM._input.value.trim());
-          if (IA.temChave(p) && !IA.provedoresProntos().length) IA.definirProvedor(p);
-          abrirChaves(p);
-        } }));
-        l1.appendChild(el('button', { class: 'dgo-b dgo-b2', type: 'button', texto: t('listarModelos'), onclick: function () {
-          var b = this; b.disabled = true;
-          IA.definirChave(p, cK._input.value);
-          IA.listarModelos(p).then(function (lista) {
-            var gratis = lista.filter(function (m) { return m.gratis; });
-            var usar = (gratis.length && pr.gratis) ? gratis : lista;
-            dl.innerHTML = '';
-            usar.slice(0, 300).forEach(function (m) { dl.appendChild(el('option', { value: m.id })); });
-            msg.innerHTML = '';
-            msg.appendChild(aviso(usar.length + ' ' + t('modelo').toLowerCase() + (usar.length === 1 ? '' : 's') +
-              (gratis.length && pr.gratis ? ' (' + t('modelosGratis') + ')' : ''), 'ok'));
-            if (!cM._input.value && usar.length) cM._input.value = usar[0].id;
-          }).catch(function (e) {
-            msg.innerHTML = ''; msg.appendChild(aviso(t('erroIA') + ' ' + ((e && e.message) || ''), 'erro'));
-          }).then(function () { b.disabled = false; });
-        } }));
-        corpo.appendChild(l1);
+        if (!pr.semChave) {
+          if (p === 'personalizado') {
+            var cB = campo(t('endereco'), { type: 'url', placeholder: 'https://…/v1', autocapitalize: 'none', spellcheck: 'false' });
+            cB._input.value = IA.baseDe(p);
+            cB._input.addEventListener('change', function () { IA.definirBase(p, cB._input.value); });
+            corpo.appendChild(cB);
+          }
+          var cK = campo(t('chave') + ' — ' + nomeProv(pr), { type: 'password', autocomplete: 'off', spellcheck: 'false', autocapitalize: 'none',
+            placeholder: IA.chave(p) ? '••••••••' : (pr.prefixo ? pr.prefixo + '…' : '') });
+          cK._input.value = IA.chave(p);
+          var olho = el('button', { type: 'button', class: 'dgo-olho', 'aria-label': t('mostrarChave'), texto: '👁', onclick: function () {
+            cK._input.type = cK._input.type === 'password' ? 'text' : 'password'; } });
+          cK.appendChild(olho);
+          corpo.appendChild(cK);
 
-        var l2 = el('div', { class: 'dgo-linha' });
-        if (tem) {
-          l2.appendChild(el('button', { class: 'dgo-b dgo-b2', type: 'button',
-            texto: IA.provedor() === p ? ('✓ ' + t('emUso')) : t('usarEste'),
-            onclick: function () { IA.definirProvedor(p); abrirChaves(p); } }));
-          l2.appendChild(el('button', { class: 'dgo-b dgo-b2', type: 'button', texto: t('remover'),
-            onclick: function () { IA.definirChave(p, ''); abrirChaves(p); } }));
+          var cM = null, dl = null;
+          if ((pr.cap || []).indexOf('texto') !== -1) {
+            cM = campo(t('modelo'), { type: 'text', autocapitalize: 'none', spellcheck: 'false', list: 'dgo-modelos-' + p });
+            cM._input.value = IA.modelo(p);
+            dl = el('datalist', { id: 'dgo-modelos-' + p });
+            var cache = (Guardar.ler('ia-lista-modelos', {}, true) || {})[p];
+            (cache && cache.modelos || []).forEach(function (m) { dl.appendChild(el('option', { value: m.id })); });
+            cM.appendChild(dl);
+            corpo.appendChild(cM);
+          }
+
+          var l1 = el('div', { class: 'dgo-linha' });
+          l1.appendChild(el('button', { class: 'dgo-b', type: 'button', texto: t('salvarTestar'), onclick: function () {
+            var b = this, valor = cK._input.value.trim();
+            var chk = chaveParece(p, valor);
+            msg.innerHTML = '';
+            if (!chk.ok && !(p === 'personalizado' && !valor)) { msg.appendChild(aviso(chk[Idioma.atual] || chk.pt, 'erro')); return; }
+            IA.definirChave(p, valor);
+            if (cM) IA.definirModelo(p, cM._input.value.trim());
+            if ((pr.cap || []).indexOf('texto') !== -1 && IA.temChave(p) && !IA.provedoresProntos().filter(function (x) { return x !== p; }).length) IA.definirProvedor(p);
+            b.disabled = true; msg.appendChild(aviso(t('testando'), 'info'));
+            testarChave(p, valor).then(function (r) {
+              msg.innerHTML = '';
+              msg.appendChild(aviso(r.semTeste ? t('chaveSalva') : t('chaveOk'), 'ok'));
+              if (r.modelos && dl) {
+                var gratis = r.modelos.filter(function (m) { return m.gratis; });
+                var usar = (gratis.length && pr.gratis) ? gratis : r.modelos;
+                dl.innerHTML = ''; usar.slice(0, 300).forEach(function (m) { dl.appendChild(el('option', { value: m.id })); });
+                if (cM && !cM._input.value && usar.length) { cM._input.value = usar[0].id; IA.definirModelo(p, usar[0].id); }
+              }
+              setTimeout(reabrir, 900);
+            }).catch(function (e) {
+              msg.innerHTML = '';
+              var st = e && e.status;
+              var txt = st === 401 || st === 403 ? t('chaveRecusada') : (!st && /fetch|network/i.test(String(e && e.message)) ? t('corsAviso') : t('erroIA') + ' ' + ((e && e.message) || ''));
+              msg.appendChild(aviso(txt, st === 401 || st === 403 ? 'erro' : 'info'));
+            }).then(function () { b.disabled = false; });
+          } }));
+          corpo.appendChild(l1);
         }
-        corpo.appendChild(l2);
+
+        /* usar para: texto / voz -> texto / texto -> voz */
+        if (tem) {
+          var lu = el('div', { class: 'dgo-linha dgo-usar' });
+          (pr.cap || []).filter(function (c) { return c !== 'visao'; }).forEach(function (c) {
+            var ativo = PorUso.provedor(c) === p;
+            lu.appendChild(el('button', { class: 'dgo-b dgo-b2' + (ativo ? ' dgo-on' : ''), type: 'button', 'aria-pressed': ativo ? 'true' : 'false',
+              texto: (ativo ? '✓ ' : '') + t('usarPara') + ' ' + CAPS[c].icone + ' ' + (CAPS[c][Idioma.atual] || CAPS[c].pt),
+              onclick: function () { if (c === 'texto') IA.definirProvedor(p); else PorUso.definir(c, p); reabrir(); } }));
+          });
+          if (!pr.semChave) lu.appendChild(el('button', { class: 'dgo-b dgo-b2', type: 'button', texto: t('remover'), onclick: function () {
+            IA.definirChave(p, ''); ['stt', 'tts'].forEach(function (c) { if (PorUso.ler()[c] === p) PorUso.definir(c, ''); }); reabrir(); } }));
+          corpo.appendChild(lu);
+        }
         corpo.appendChild(msg);
         caixa.appendChild(corpo);
       });
 
-      caixa.appendChild(aviso(t('chaveAvisoCusto'), 'info'));
-      caixa.appendChild(el('button', { class: 'dgo-b dgo-b2', type: 'button', texto: t('fechar'),
-        onclick: fecharModal }));
+      caixa.appendChild(aviso(t('chaveAvisoCusto') + ' ' + t('chaveNuncaChat'), 'info'));
+      caixa.appendChild(el('button', { class: 'dgo-b dgo-b2', type: 'button', texto: t('fechar'), onclick: fecharModal }));
       return caixa;
     }
-    return abrirModal(montar(), function () { abrirChaves(aberto); });
+    return abrirModal(montar(), function () { abrirChaves(aberto, filtro); });
   }
 
   /* ---------------- widget de consulta ---------------- */
@@ -4817,12 +5165,21 @@
       definirChave: function (prov, k) { return IA.definirChave(prov, k); },
       provedor: function () { return IA.provedor(); },
       definirProvedor: function (p) { return IA.definirProvedor(p); },
-      provedores: function () {
-        return IA.provedoresOrdenados().map(function (p) {
+      provedores: function (cap) {
+        completarProvedores();
+        return Object.keys(PROVEDORES).filter(function (p) { return cap ? (PROVEDORES[p].cap || []).indexOf(cap) !== -1 : !PROVEDORES[p].soVoz; })
+          .sort(function (a, b) { return (PROVEDORES[a].ordem || 9) - (PROVEDORES[b].ordem || 9); }).map(function (p) {
           var pr = PROVEDORES[p];
-          return { id: p, nome: pr.nome, gratis: pr.gratis, onde: pr.onde, temChave: IA.temChave(p), modelo: IA.modelo(p) };
+          return { id: p, nome: nomeProv(pr), gratis: pr.gratis, onde: pr.onde, cap: pr.cap || [], temChave: IA.temChave(p), modelo: IA.modelo(p),
+                   stt: pr.stt || null, tts: pr.tts || null, semChave: !!pr.semChave };
         });
       },
+      /* por uso: 'texto' | 'stt' | 'tts' | 'visao' - o app pergunta qual provedor e qual chave usar */
+      capacidades: function () { return Object.keys(CAPS).map(function (c) { return { id: c, icone: CAPS[c].icone, nome: CAPS[c][Idioma.atual] || CAPS[c].pt }; }); },
+      provedorPara: function (cap) { completarProvedores(); return PorUso.provedor(cap); },
+      chavePara: function (cap) { completarProvedores(); return PorUso.chave(cap); },
+      definirPara: function (cap, prov) { if (cap === 'texto') IA.definirProvedor(prov); else PorUso.definir(cap, prov); },
+      guia: function (prov, cap) { return abrirChaves(prov, cap); },
       provedoresProntos: function () { return IA.provedoresProntos(); },
       modelo: function (prov) { return IA.modelo(prov); },
       definirModelo: function (prov, m) { return IA.definirModelo(prov, m); },
