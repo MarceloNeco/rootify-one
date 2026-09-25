@@ -17,7 +17,7 @@
   var RF = raiz.RF = raiz.RF || {};
   var d = document;
   var PREFIXO = 'rootify:v1:';
-  var VERSAO = '0.1.3';
+  var VERSAO = '0.1.5';
   RF.VERSAO = VERSAO;
   RF.telas = RF.telas || {};
   RF.h = RF.h || {};

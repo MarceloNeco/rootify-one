@@ -373,10 +373,68 @@
       } }
     ], hist, { vazio: T('Nada publicado ainda.', 'Nothing published yet.') })]));
   };
+  /* Versão e novidades: várias versões no mesmo dia viram UMA entrada (a última do dia),
+     com as notas de todas juntas. Fica recolhido para não ocupar espaço. */
+  function consolidarPorDia(versoes) {
+    var dias = {}, ordem = [];
+    (versoes || []).forEach(function (v) {
+      var d = v.data || '';
+      if (!dias[d]) { dias[d] = { data: d, versoes: [], pt: [], en: [] }; ordem.push(d); }
+      dias[d].versoes.push(v);
+    });
+    return ordem.sort().reverse().map(function (d) {
+      var g = dias[d];
+      g.versoes.sort(function (a, b) { return cmpVersao(b.versao, a.versao); });
+      var ultima = g.versoes[0], substituidas = {};
+      g.versoes.forEach(function (v) { if (v.substitui) substituidas[v.substitui] = true; });
+      g.versoes.slice().reverse().forEach(function (v) {
+        if (substituidas[v.versao]) return;
+        ['pt', 'en'].forEach(function (l) {
+          ((v.itens && v.itens[l]) || []).forEach(function (t) { if (g[l].indexOf(t) < 0) g[l].push(t); });
+        });
+      });
+      g.ultima = ultima.versao; g.hora = ultima.hora || '';
+      g.primeira = g.versoes[g.versoes.length - 1].versao;
+      return g;
+    });
+  }
+  function cmpVersao(a, b) {
+    var x = String(a).split('.').map(Number), y = String(b).split('.').map(Number);
+    for (var i = 0; i < Math.max(x.length, y.length); i++) { var d = (x[i] || 0) - (y[i] || 0); if (d) return d; }
+    return 0;
+  }
+  RF.consolidarPorDia = consolidarPorDia;
+  function novidadesPorDia() {
+    var caixa = el('details', { class: 'rf-det' }, [el('summary', { texto: T('Versão ', 'Version ') + RF.VERSAO + T(' · novidades', ' · what\'s new') })]);
+    var corpo = el('div', {}, [el('p', { class: 'rf-dica', texto: T('Carregando…', 'Loading…') })]);
+    caixa.appendChild(corpo);
+    var carregado = false;
+    caixa.addEventListener('toggle', function () {
+      if (!caixa.open || carregado) return; carregado = true;
+      fetch('versoes.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (j) {
+        U.limpar(corpo);
+        var dias = consolidarPorDia(j.versoes), mostrar = 5;
+        function desenhar() {
+          U.limpar(corpo);
+          dias.slice(0, mostrar).forEach(function (g) {
+            var titulo = g.ultima + ' · ' + U.data(g.data + 'T12:00:00') + (g.hora ? ' ' + g.hora.replace(':', 'h') + 'm' : '');
+            corpo.appendChild(el('h4', { texto: titulo }));
+            if (g.versoes.length > 1) corpo.appendChild(el('p', { class: 'rf-dica', texto: T('inclui ', 'includes ') + g.primeira + T(' a ', ' to ') + g.ultima }));
+            corpo.appendChild(el('ul', {}, g[U.idioma() === 'en' ? 'en' : 'pt'].map(function (t) { return el('li', { texto: t }); })));
+          });
+          if (dias.length > mostrar) corpo.appendChild(ui.botao(T('Ver mais', 'See more'), function () { mostrar += 5; desenhar(); }, 'link'));
+        }
+        desenhar();
+      }).catch(function () { U.limpar(corpo); corpo.appendChild(el('p', { class: 'rf-dica', texto: T('Não deu para ler o versoes.json agora.', 'Could not read versoes.json now.') })); });
+    });
+    return caixa;
+  }
   function dataArquivo(q) {
     var d = q ? new Date(q) : new Date();
     var M = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
-    return ('0' + d.getDate()).slice(-2) + '-' + M[d.getMonth()] + '-' + d.getFullYear();
+    /* regra de entrega: data + hora do release (vários releases no mesmo dia) */
+    return ('0' + d.getDate()).slice(-2) + '-' + M[d.getMonth()] + '-' + d.getFullYear() +
+      ' ' + ('0' + d.getHours()).slice(-2) + 'h' + ('0' + d.getMinutes()).slice(-2) + 'm';
   }
   function registrarPublicacao(via, arquivos, commits, restaurouDe) {
     var snap = {}; arquivos.forEach(function (a) { snap[a.nome] = a.texto; });
@@ -1245,6 +1303,7 @@
         el('p', { texto: T('Administração central da SolverONE. JavaScript, HTML e CSS puros; dados cifrados neste aparelho (AES-GCM, chave derivada por PBKDF2).', 'SolverONE central administration. Plain JavaScript, HTML and CSS; data encrypted on this device (AES-GCM, key derived with PBKDF2).') }),
         el('p', {}, [T('Módulo comum: ', 'Shared module: '), raiz.DGO ? 'diretrizes.js ' + raiz.DGO.versao : T('não carregado', 'not loaded')]),
         H.barras(T('Registros guardados', 'Stored records'), cont),
+        novidadesPorDia(),
         el('p', {}, [el('a', { href: 'https://marceloneco.github.io/', target: '_blank', rel: 'noopener', texto: T('Portal de Projetos ↗', 'Projects Portal ↗') })])
       ]));
     }

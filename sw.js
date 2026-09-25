@@ -2,7 +2,7 @@
    como app no celular e no computador.
    Ao publicar uma versao nova do seu site, troque o numero de VERSAO
    abaixo (ex.: 'v1' -> 'v2') para o aparelho pegar os arquivos novos. */
-var VERSAO = 'v4';
+var VERSAO = 'v6';
 /* Todos os apps moram no mesmo endereco (marceloneco.github.io) e dividem
    os caches. Por isso o nome leva a pasta do app: assim um app nunca apaga
    o modo sem internet de outro. A pasta vem do proprio endereco, entao este
@@ -34,21 +34,35 @@ self.addEventListener('fetch', function (e) {
   var url = new URL(req.url);
   if (url.origin !== self.location.origin) return;   // nao mexe em API externa
 
-  /* paginas: tenta a rede primeiro (conteudo sempre atual), cache como reserva */
-  if (req.mode === 'navigate') {
-    e.respondWith(
-      fetch(req).then(function (r) {
-        var copia = r.clone();
-        caches.open(CACHE).then(function (c) { c.put(req, copia); });
-        return r;
-      }).catch(function () {
-        return caches.match(req).then(function (r) { return r || caches.match('./index.html'); });
-      })
-    );
+  /* Codigo do app (pagina, .js, .css, .json): REDE PRIMEIRO, conferindo com o
+     servidor (cache: 'no-cache' evita o cache de ate 10 min do GitHub Pages).
+     Assim, com sinal, sempre roda a versao nova inteira; sem sinal (ou se a
+     rede demorar mais de 4 s), usa a copia guardada. Antes, pagina nova com
+     .js antigo podia rodar misturada no primeiro recarregar depois de um release. */
+  var codigo = req.mode === 'navigate' || /\.(js|css|json|html)$/i.test(url.pathname) || /\/$/.test(url.pathname);
+  if (codigo) {
+    e.respondWith(new Promise(function (ok) {
+      var feito = false;
+      function reserva() {
+        if (feito) return; feito = true;
+        caches.match(req).then(function (r) {
+          ok(r || (req.mode === 'navigate' ? caches.match('./index.html') : fetch(req)));
+        });
+      }
+      var prazo = setTimeout(reserva, 4000);
+      fetch(req, { cache: 'no-cache' }).then(function (r) {
+        clearTimeout(prazo);
+        if (r && r.status === 200) {
+          var copia = r.clone();
+          caches.open(CACHE).then(function (c) { c.put(req, copia); });
+        }
+        if (!feito) { feito = true; ok(r); }
+      }).catch(function () { clearTimeout(prazo); reserva(); });
+    }));
     return;
   }
 
-  /* demais arquivos: cache primeiro, atualizando em segundo plano */
+  /* arquivos pesados (imagens, sons, motor de OCR): cache primeiro, atualizando por tras */
   e.respondWith(
     caches.match(req).then(function (cacheado) {
       var rede = fetch(req).then(function (r) {

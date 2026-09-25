@@ -2,6 +2,34 @@
   "app": "rootify-one",
   "versoes": [
     {
+      "versao": "0.1.5",
+      "data": "2026-09-25",
+      "hora": "11:01",
+      "itens": {
+        "pt": [
+          "Depois de um release, o primeiro recarregar já abre a versão nova inteira (antes podia misturar arquivos novos e antigos e pedir para entrar de novo).",
+          "Configurações → Sobre: \"Versão e novidades\" recolhido, com as versões do mesmo dia juntas numa entrada só."
+        ],
+        "en": [
+          "After a release, the first reload already opens the whole new version (before, it could mix new and old files and ask you to sign in again).",
+          "Settings → About: collapsed \"Version and what's new\", with same-day versions merged into a single entry."
+        ]
+      }
+    },
+    {
+      "versao": "0.1.4",
+      "data": "2026-09-25",
+      "hora": "10:53",
+      "itens": {
+        "pt": [
+          "Pacotes baixados em Publicar trazem data e hora no nome (ex.: SOLVERONE-DADOS v0.1.4 25-Set-2026 10h55m.zip), porque pode haver mais de um release no mesmo dia."
+        ],
+        "en": [
+          "Packages downloaded in Publish carry date and time in the name (e.g. SOLVERONE-DADOS v0.1.4 25-Set-2026 10h55m.zip), since there can be more than one release a day."
+        ]
+      }
+    },
+    {
       "versao": "0.1.3",
       "data": "2026-09-25",
       "itens": {
