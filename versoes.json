@@ -2,6 +2,19 @@
   "app": "rootify-one",
   "versoes": [
     {
+      "versao": "0.1.7",
+      "data": "2026-09-25",
+      "hora": "12:40:03",
+      "itens": {
+        "pt": [
+          "Horários com segundos em todo o RootifyONE; no log (Auditoria), também o fuso horário do aparelho (ex.: UTC−03:00), e no detalhe do registro o horário UTC original. O CSV do log traz as duas colunas."
+        ],
+        "en": [
+          "Times with seconds across RootifyONE; in the log (Audit), also the device's time zone (e.g. UTC−03:00), and the original UTC time in the entry detail. The log CSV has both columns."
+        ]
+      }
+    },
+    {
       "versao": "0.1.6",
       "data": "2026-09-25",
       "hora": "11:15:37",

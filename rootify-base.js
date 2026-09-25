@@ -17,7 +17,7 @@
   var RF = raiz.RF = raiz.RF || {};
   var d = document;
   var PREFIXO = 'rootify:v1:';
-  var VERSAO = '0.1.6';
+  var VERSAO = '0.1.7';
   RF.VERSAO = VERSAO;
   RF.telas = RF.telas || {};
   RF.h = RF.h || {};
@@ -60,15 +60,27 @@
     return (p || '') + Array.prototype.map.call(a, function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
   }
   function agora() { return new Date().toISOString(); }
+  /* Datas do RootifyONE (app interno): com hora sai com SEGUNDOS; comHora === 'fuso' também
+     mostra o fuso do aparelho (ex.: 25/Set/2026 12:37:05 UTC−03:00). A data em si segue o
+     padrão do módulo comum (DGO.formatarData), a hora é montada aqui. */
+  function fusoTxt(dt) {
+    var m = -(dt || new Date()).getTimezoneOffset(), sinal = m >= 0 ? '+' : '−'; m = Math.abs(m);
+    return 'UTC' + sinal + ('0' + Math.floor(m / 60)).slice(-2) + ':' + ('0' + (m % 60)).slice(-2);
+  }
+  function fusoNome() { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) { return ''; } }
   function dataFmt(v, comHora) {
     if (!v) return '—';
-    try { if (raiz.DGO && raiz.DGO.formatarData) return raiz.DGO.formatarData(v, idioma(), comHora); } catch (e) {}
     var dt = new Date(v); if (isNaN(dt)) return String(v);
-    var M = idioma() === 'en' ? ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-                              : ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-    var dd = ('0' + dt.getDate()).slice(-2), s = idioma() === 'en' ? M[dt.getMonth()] + '/' + dd + '/' + dt.getFullYear()
-                                                                     : dd + '/' + M[dt.getMonth()] + '/' + dt.getFullYear();
-    if (comHora) s += ' ' + ('0' + dt.getHours()).slice(-2) + ':' + ('0' + dt.getMinutes()).slice(-2);
+    var s = null;
+    try { if (raiz.DGO && raiz.DGO.formatarData) s = raiz.DGO.formatarData(v, idioma(), false); } catch (e) {}
+    if (!s || /\d{1,2}:\d{2}/.test(s)) {
+      var M = idioma() === 'en' ? ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+                                : ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      var dd = ('0' + dt.getDate()).slice(-2);
+      s = idioma() === 'en' ? M[dt.getMonth()] + '/' + dd + '/' + dt.getFullYear() : dd + '/' + M[dt.getMonth()] + '/' + dt.getFullYear();
+    }
+    if (comHora) s += ' ' + ('0' + dt.getHours()).slice(-2) + ':' + ('0' + dt.getMinutes()).slice(-2) + ':' + ('0' + dt.getSeconds()).slice(-2);
+    if (comHora === 'fuso') s += ' ' + fusoTxt(dt);
     return s;
   }
   function semAcento(s) {
@@ -1084,7 +1096,7 @@
   };
 
   /* exporta tudo */
-  RF.util = { T: T, el: el, limpar: limpar, uid: uid, agora: agora, data: dataFmt, semAcento: semAcento, distancia: distancia,
+  RF.util = { T: T, el: el, limpar: limpar, uid: uid, agora: agora, data: dataFmt, fuso: fusoTxt, fusoNome: fusoNome, semAcento: semAcento, distancia: distancia,
     mascararEmail: mascararEmail, mascararTexto: mascararTexto, copiar: copiar, baixar: baixar, clonar: clonar,
     idioma: idioma, lerLocal: lerLocal, gravarLocal: gravarLocal, apagarLocal: apagarLocal, sha256: sha256,
     criarZip: criarZip, csv: csv, lerCsv: lerCsv, PREFIXO: PREFIXO };

@@ -834,7 +834,7 @@
       }).slice().reverse();
       U.limpar(bloco);
       bloco.appendChild(ui.tabela([
-        { id: 'q', nome: T('Quando', 'When'), ordenar: function (e) { return e.quando; }, desenhar: function (e) { return U.data(e.quando, true); } },
+        { id: 'q', nome: T('Quando', 'When'), ordenar: function (e) { return e.quando; }, desenhar: function (e) { return U.data(e.quando, 'fuso'); } },
         { id: 'p', nome: T('Quem', 'Who'), valor: function (e) { return e.quem + (e.simulando ? ' 🎭' : ''); } },
         { id: 'm', nome: T('Módulo', 'Module'), valor: function (e) { return e.modulo; } },
         { id: 'a', nome: T('Ação', 'Action'), valor: function (e) { return e.acao; } },
@@ -850,7 +850,7 @@
     var pii = RF.pode('usuarios.pii:ver');
     function mostra(v) { var s = JSON.stringify(v, null, 2) || 'null'; return pii ? s : s.replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, function (m) { return U.mascararEmail(m); }); }
     ui.modal(T('Registro do log', 'Log entry'), el('div', {}, [
-      el('dl', { class: 'rf-dl' }, [el('dt', { texto: T('Quando', 'When') }), el('dd', { texto: U.data(e.quando, true) }), el('dt', { texto: T('Quem', 'Who') }), el('dd', { texto: e.quem + ' · ' + e.papel + (e.simulando ? ' · ' + T('em modo de teste', 'in test mode') : '') }),
+      el('dl', { class: 'rf-dl' }, [el('dt', { texto: T('Quando', 'When') }), el('dd', { texto: U.data(e.quando, 'fuso') + (U.fusoNome() ? ' · ' + U.fusoNome() : '') + ' · ' + e.quando + ' (UTC)' }), el('dt', { texto: T('Quem', 'Who') }), el('dd', { texto: e.quem + ' · ' + e.papel + (e.simulando ? ' · ' + T('em modo de teste', 'in test mode') : '') }),
         el('dt', { texto: T('Ação', 'Action') }), el('dd', { texto: e.modulo + ' · ' + e.acao }), el('dt', { texto: T('Alvo', 'Target') }), el('dd', { texto: e.alvo || '—' }),
         el('dt', { texto: T('Resumo', 'Summary') }), el('dd', { texto: e.resumo })]),
       el('div', { class: 'rf-grade-2' }, [el('div', {}, [el('h3', { texto: T('Antes', 'Before') }), el('pre', { class: 'rf-codigo-bloco', texto: mostra(e.antes) })]),
@@ -861,7 +861,7 @@
   function exportarLog(formato) {
     var l = C.lista('log');
     if (formato === 'json') U.baixar('log-rootify-' + U.agora().slice(0, 10) + '.json', JSON.stringify({ base: C.obj('config').logBase || 'inicio', registros: l }, null, 2), 'application/json');
-    else U.baixar('log-rootify-' + U.agora().slice(0, 10) + '.csv', U.csv([['quando', 'quando'], ['quem', 'quem'], ['papel', 'papel'], ['modulo', 'modulo'], ['acao', 'acao'], ['alvo', 'alvo'], ['resumo', 'resumo'], ['hash', 'hash'], ['anterior', 'anterior']], l), 'text/csv');
+    else U.baixar('log-rootify-' + U.agora().slice(0, 10) + '.csv', U.csv([['quando', 'quando_utc'], [function (e) { return U.data(e.quando, 'fuso'); }, 'quando_local'], ['quem', 'quem'], ['papel', 'papel'], ['modulo', 'modulo'], ['acao', 'acao'], ['alvo', 'alvo'], ['resumo', 'resumo'], ['hash', 'hash'], ['anterior', 'anterior']], l), 'text/csv');
     RF.Log.registrar('auditoria', 'exportar', '', null, { formato: formato, total: l.length }, T('Log exportado em ', 'Log exported as ') + formato);
   }
 
