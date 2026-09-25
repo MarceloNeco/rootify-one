@@ -7,7 +7,7 @@
 DGO.iniciar({
   app: 'rootify-one',                       /* gaveta de dados: nunca mude */
   nome: { pt: 'RootifyONE', en: 'RootifyONE' },
-  versaoApp: '0.1.5',
+  versaoApp: '0.1.6',
   cor: '#34d399',
   corFundoBarra: '#0b1220',
   idiomaPadrao: 'pt',

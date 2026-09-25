@@ -404,29 +404,34 @@
     return 0;
   }
   RF.consolidarPorDia = consolidarPorDia;
+  function horaTxt(h) {       /* "10:53" ou "10:53:07" → " 10h53m" / " 10h53m07s" */
+    if (!h) return '';
+    var p = String(h).split(':');
+    return ' ' + p[0] + 'h' + (p[1] || '00') + 'm' + (p[2] ? p[2] + 's' : '');
+  }
   function novidadesPorDia() {
-    var caixa = el('details', { class: 'rf-det' }, [el('summary', { texto: T('Versão ', 'Version ') + RF.VERSAO + T(' · novidades', ' · what\'s new') })]);
+    var resumo = el('summary', { texto: T('Versão ', 'Version ') + RF.VERSAO });
+    var caixa = el('details', { class: 'rf-det' }, [resumo]);
     var corpo = el('div', {}, [el('p', { class: 'rf-dica', texto: T('Carregando…', 'Loading…') })]);
     caixa.appendChild(corpo);
-    var carregado = false;
-    caixa.addEventListener('toggle', function () {
-      if (!caixa.open || carregado) return; carregado = true;
-      fetch('versoes.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (j) {
-        U.limpar(corpo);
-        var dias = consolidarPorDia(j.versoes), mostrar = 5;
-        function desenhar() {
-          U.limpar(corpo);
-          dias.slice(0, mostrar).forEach(function (g) {
-            var titulo = g.ultima + ' · ' + U.data(g.data + 'T12:00:00') + (g.hora ? ' ' + g.hora.replace(':', 'h') + 'm' : '');
-            corpo.appendChild(el('h4', { texto: titulo }));
-            if (g.versoes.length > 1) corpo.appendChild(el('p', { class: 'rf-dica', texto: T('inclui ', 'includes ') + g.primeira + T(' a ', ' to ') + g.ultima }));
-            corpo.appendChild(el('ul', {}, g[U.idioma() === 'en' ? 'en' : 'pt'].map(function (t) { return el('li', { texto: t }); })));
-          });
-          if (dias.length > mostrar) corpo.appendChild(ui.botao(T('Ver mais', 'See more'), function () { mostrar += 5; desenhar(); }, 'link'));
-        }
-        desenhar();
-      }).catch(function () { U.limpar(corpo); corpo.appendChild(el('p', { class: 'rf-dica', texto: T('Não deu para ler o versoes.json agora.', 'Could not read versoes.json now.') })); });
-    });
+    var dias = null, mostrar = 5;
+    function desenhar() {
+      if (!dias || !caixa.open) return;
+      U.limpar(corpo);
+      dias.slice(0, mostrar).forEach(function (g) {
+        /* RootifyONE é interno: mostra data E hora (nos apps do usuário, só a data) */
+        corpo.appendChild(el('h4', { texto: g.ultima + ' · ' + U.data(g.data + 'T12:00:00') + horaTxt(g.hora) }));
+        if (g.versoes.length > 1) corpo.appendChild(el('p', { class: 'rf-dica', texto: T('inclui ', 'includes ') + g.primeira + T(' a ', ' to ') + g.ultima }));
+        corpo.appendChild(el('ul', {}, g[U.idioma() === 'en' ? 'en' : 'pt'].map(function (t) { return el('li', { texto: t }); })));
+      });
+      if (dias.length > mostrar) corpo.appendChild(ui.botao(T('Ver mais', 'See more'), function () { mostrar += 5; desenhar(); }, 'link'));
+    }
+    fetch('versoes.json', { cache: 'no-cache' }).then(function (r) { return r.json(); }).then(function (j) {
+      dias = consolidarPorDia(j.versoes);
+      if (dias.length) resumo.textContent = T('Versão ', 'Version ') + dias[0].ultima + ' · ' + U.data(dias[0].data + 'T12:00:00') + horaTxt(dias[0].hora) + T(' · novidades', ' · what\'s new');
+      desenhar();
+    }).catch(function () { U.limpar(corpo); corpo.appendChild(el('p', { class: 'rf-dica', texto: T('Não deu para ler o versoes.json agora.', 'Could not read versoes.json now.') })); });
+    caixa.addEventListener('toggle', desenhar);
     return caixa;
   }
   function dataArquivo(q) {
