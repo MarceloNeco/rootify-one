@@ -17,7 +17,7 @@
   var RF = raiz.RF = raiz.RF || {};
   var d = document;
   var PREFIXO = 'rootify:v1:';
-  var VERSAO = '0.1.0';
+  var VERSAO = '0.1.1';
   RF.VERSAO = VERSAO;
   RF.telas = RF.telas || {};
   RF.h = RF.h || {};
@@ -637,13 +637,27 @@
     if (pilha.length) ui.fecharModal(true);
   });
   /* fechar o modal e só então trocar de tela (o Voltar continua certo) */
+  /* Voltar n passos no histórico e SÓ DEPOIS fazer algo. O history.go é
+     assíncrono: trocar de tela antes de ele terminar faz o navegador
+     "desfazer" a troca (a tela nova pisca e some). Por isso espera o
+     popstate, com um prazo de reserva caso ele não chegue. */
+  ui.voltarEDepois = function (n, depois) {
+    var feito = false;
+    function seguir() {
+      if (feito) return; feito = true;
+      raiz.removeEventListener('popstate', seguir);
+      setTimeout(depois, 0);
+    }
+    raiz.addEventListener('popstate', seguir);
+    ui._ignorarPop = true;
+    try { raiz.history.go(-n); } catch (e) { ui._ignorarPop = false; seguir(); return; }
+    setTimeout(function () { if (!feito) { ui._ignorarPop = false; seguir(); } }, 500);
+  };
   ui.fecharEIr = function (modulo, sub, id) {
     var n = pilha.length;
     if (!n) { RF.Rota.ir(modulo, sub, id); return; }
     while (pilha.length) { pilha.pop().fundo.remove(); }
-    ui._ignorarPop = true;
-    raiz.history.go(-n);
-    setTimeout(function () { RF.Rota.ir(modulo, sub, id); }, 80);
+    ui.voltarEDepois(n, function () { RF.Rota.ir(modulo, sub, id); });
   };
 
   ui.confirmar = function (titulo, texto, opcoes) {

@@ -272,7 +272,11 @@
           n ? el('span', { class: 'rf-conta', texto: String(n), 'aria-label': n + T(' pendentes', ' pending') }) : null,
           m.estado !== 'ativo' ? el('span', { class: 'rf-ponto rf-ponto-' + m.estado, title: m.estado === 'futuro' ? T('futuro', 'future') : T('parcial', 'partial') }) : null
         ]);
-        a.onclick = function () { if (raiz.innerWidth < 1100) fecharMenu(); };
+        a.onclick = function (e) {
+          if (raiz.innerWidth >= 1100) return;            /* menu fixo ao lado: o link segue normal */
+          e.preventDefault();
+          fecharMenuEIr(m.id);
+        };
         lista.appendChild(a);
       });
     });
@@ -305,6 +309,15 @@
   raiz.addEventListener('popstate', function () {
     if (d.body.classList.contains('rf-menu-aberto') && raiz.innerWidth < 1100) fecharMenu(true);
   });
+  /* Fechar a gaveta e só então trocar de tela. Antes, o "voltar" que tira
+     a gaveta do histórico chegava depois da troca e desfazia a tela nova
+     (acontecia com a janela estreita, ex.: painel lateral do Chrome aberto). */
+  function fecharMenuEIr(modulo) {
+    var tinhaEntrada = raiz.history.state && raiz.history.state.rfMenu;
+    fecharMenu(true);
+    if (tinhaEntrada) ui.voltarEDepois(1, function () { RF.Rota.ir(modulo); });
+    else RF.Rota.ir(modulo);
+  }
 
   function favoritos() {
     var cfg = C.aberto() ? C.obj('config') : {};

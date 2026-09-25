@@ -2,6 +2,18 @@
   "app": "rootify-one",
   "versoes": [
     {
+      "versao": "0.1.1",
+      "data": "2026-09-25",
+      "itens": {
+        "pt": [
+          "Correção: com a janela estreita (celular, tablet ou painel lateral do navegador aberto), escolher uma tela no menu ☰ fechava o menu e não abria a tela."
+        ],
+        "en": [
+          "Fix: in a narrow window (phone, tablet or browser side panel open), picking a screen in the ☰ menu closed the menu without opening the screen."
+        ]
+      }
+    },
+    {
       "versao": "0.1.0",
       "data": "2026-09-25",
       "itens": {
