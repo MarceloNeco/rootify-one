@@ -19,6 +19,7 @@
     aprovado: [{ pt: 'aprovado', en: 'approved' }, 'info'], publicado: [{ pt: 'publicado', en: 'published' }, 'ok'],
     substituido: [{ pt: 'substituído', en: 'superseded' }, 'cinza']
   };
+  RF.telasTermos = { TIPOS: TIPOS_TERMO };   /* o agente de IA (rootify-ia-termos.js) usa os mesmos nomes */
   function seloTermo(e) { var x = ESTADOS_TERMO[e] || [{ pt: e, en: e }, 'neutro']; return ui.selo(T(x[0]), x[1]); }
   function pessoasComPermissao(perm) {
     return C.equipe().filter(function (p) {
@@ -33,8 +34,10 @@
      ------------------------------------------------------------------ */
   RF.telas.termos = function (area, rota) {
     if (rota.sub === 'termo' && rota.id) return telaTermo(area, rota.id);
+    if (rota.sub === 'agente' && RF.iaTermos) return RF.iaTermos.telaAgente(area);
     RF.pagina(area, 'termos', T('Fluxo: rascunho → revisão → aprovado (por outra pessoa) → publicado. Só versões publicadas vão para o termos.json.', 'Flow: draft → review → approved (by someone else) → published. Only published versions go to termos.json.'),
-      [ui.botaoSe('termos:criar', null, '+ ' + T('Novo termo', 'New term'), novoTermo, 'pri')]);
+      [RF.iaTermos ? ui.botaoSe('termos:criar', null, '🤖 ' + T('Agente de políticas (IA)', 'Policy agent (AI)'), function () { RF.Rota.ir('termos', 'agente'); }) : null,
+       ui.botaoSe('termos:criar', null, '+ ' + T('Novo termo', 'New term'), novoTermo, 'pri')].filter(Boolean));
     var lista = C.lista('termos').filter(function (t) { return RF.noEscopo(t.app); });
     area.appendChild(ui.tabela([
       { id: 't', nome: T('Documento', 'Document'), valor: function (t) { return T(D.Termos.ultima(t).titulo); } },
@@ -88,12 +91,25 @@
       v.titulo = tit.valor(); v.texto = txt.valor();
       return RF.mudar('termos', 'termos', 'editar', t.id, null, { versao: v.versao }, T('Texto do termo salvo (v', 'Term text saved (v') + v.versao + ')');
     }
+    if (podeEd && RF.iaTermos) {
+      /* IA: escreve, melhora, confere e traduz; o resultado entra como rascunho */
+      acoes.push(ui.botao('✨ ' + T('Escrever com IA', 'Write with AI'), function () {
+        RF.iaTermos.abrirEditor(t, v, function () { return { titulo: tit.valor(), texto: txt.valor() }; });
+      }));
+      if (v.antesIA) acoes.push(ui.botao('↶ ' + T('Desfazer a IA', 'Undo the AI'), function () {
+        ui.confirmar(T('Desfazer a IA', 'Undo the AI'), T('Volta o título e o texto de antes da IA. O texto da IA fica guardado no log.', 'Restores the title and text from before the AI. The AI text stays in the log.')).then(function (ok) {
+          if (ok) RF.iaTermos.desfazer(t, v).then(RF.renderizar);
+        });
+      }));
+    }
     if (podeEd) {
       acoes.push(ui.botao(T('Salvar rascunho', 'Save draft'), function () { salvarTexto().then(function () { ui.aviso(T('Salvo.', 'Saved.')); }); }));
       acoes.push(ui.botao(T('Enviar para aprovação', 'Send for approval'), function () {
         var tv = tit.valor(), xv = txt.valor();
         if (!tv.pt || !tv.en || !xv.pt || !xv.en) return ui.aviso(T('Título e texto em PT e EN antes de enviar.', 'Title and text in PT and EN before sending.'), 'erro');
-        salvarTexto().then(function () { transicao('revisao', T('enviado para aprovação', 'sent for approval')); });
+        var nDef = ((xv.pt + '\n' + xv.en + '\n' + tv.pt + '\n' + tv.en).match(/\[(A DEFINIR|TO BE DEFINED)/gi) || []).length;
+        if (nDef) return ui.aviso(T('Ainda há ', 'There are still ') + nDef + T(' marcador(es) [A DEFINIR] no texto. Preencha antes de enviar.', ' [TO BE DEFINED] marker(s) in the text. Fill them in before sending.'), 'erro');
+        salvarTexto().then(function () { delete v.antesIA; transicao('revisao', T('enviado para aprovação', 'sent for approval')); });
       }, 'pri'));
     }
     if (v.estado === 'revisao' && RF.pode('termos:aprovar', t.app)) {

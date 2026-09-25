@@ -21,7 +21,7 @@
 (function (raiz) {
   'use strict';
 
-  var VERSAO = '1.0.0';
+  var VERSAO = '1.0.1';
   if (raiz.DGO && raiz.DGO.__carregado) { return; }
 
   /* ------------------------------------------------------------------
@@ -4022,7 +4022,7 @@
   }
 
   /* adaptador generico, formato OpenAI */
-  function chamarCompativel(base, chave, modelo, sistema, mensagens, extras) {
+  function chamarCompativel(base, chave, modelo, sistema, mensagens, extras, limite) {
     var msgs = [];
     if (sistema) msgs.push({ role: 'system', content: sistema });
     mensagens.forEach(function (m) {
@@ -4033,7 +4033,7 @@
     if (extras) for (var k in extras) cab[k] = extras[k];
     return fetch(base + '/chat/completions', {
       method: 'POST', headers: cab,
-      body: JSON.stringify({ model: modelo, messages: msgs, max_tokens: 900 })
+      body: JSON.stringify({ model: modelo, messages: msgs, max_tokens: limite || 900 })
     }).then(lerResposta).then(function (j) {
       return ((j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || '').trim();
     });
@@ -4066,7 +4066,7 @@
       modelo: 'openrouter/free',      /* roteador que escolhe um modelo gratis disponivel */
       nota: { pt: 'Modelos com ":free" no nome. Grátis: 20 pedidos por minuto e 50 por dia (1000 por dia se um dia comprar 10 dólares de crédito). Um cadastro, várias IAs.',
               en: 'Models ending in ":free". Free: 20 requests per minute and 50 per day (1000 per day if you ever buy 10 dollars of credit). One sign-up, many AIs.' },
-      chamar: function (chave, modelo, sistema, msgs) { return chamarCompativel(this.base, chave, modelo, sistema, msgs, cabecalhosOpenRouter()); },
+      chamar: function (chave, modelo, sistema, msgs, limite) { return chamarCompativel(this.base, chave, modelo, sistema, msgs, cabecalhosOpenRouter(), limite); },
       listar: function (chave) { return listarCompativel(this.base, chave, cabecalhosOpenRouter()); }
     },
     groq: {
@@ -4076,7 +4076,7 @@
       modelo: 'llama-3.3-70b-versatile',
       nota: { pt: 'Muito rápido. Plano grátis com cerca de 30 pedidos por minuto e 1.000 por dia no modelo comum.',
               en: 'Very fast. Free plan around 30 requests per minute and 1,000 per day on the common model.' },
-      chamar: function (chave, modelo, sistema, msgs) { return chamarCompativel(this.base, chave, modelo, sistema, msgs); },
+      chamar: function (chave, modelo, sistema, msgs, limite) { return chamarCompativel(this.base, chave, modelo, sistema, msgs, null, limite); },
       listar: function (chave) { return listarCompativel(this.base, chave); }
     },
     gemini: {
@@ -4085,13 +4085,14 @@
       modelo: 'gemini-2.0-flash',
       nota: { pt: 'Plano grátis com limites que o Google mostra no AI Studio. Confira o aviso de privacidade ao criar a chave.',
               en: 'Free plan with limits shown by Google in AI Studio. Check the privacy notice when creating the key.' },
-      chamar: function (chave, modelo, sistema, mensagens) {
+      chamar: function (chave, modelo, sistema, mensagens, limite) {
         var corpo = {
           contents: mensagens.map(function (m) {
             return { role: m.papel === 'ia' ? 'model' : 'user', parts: [{ text: m.texto }] };
           })
         };
         if (sistema) corpo.systemInstruction = { parts: [{ text: sistema }] };
+        if (limite) corpo.generationConfig = { maxOutputTokens: limite };
         return fetch('https://generativelanguage.googleapis.com/v1beta/models/' +
                      encodeURIComponent(modelo) + ':generateContent', {
           method: 'POST',
@@ -4122,7 +4123,7 @@
       modelo: 'mistral-small-latest',
       nota: { pt: 'Tem plano grátis com limites apertados; os números aparecem dentro da conta depois de entrar.',
               en: 'Has a free plan with tight limits; the numbers show inside the account after signing in.' },
-      chamar: function (chave, modelo, sistema, msgs) { return chamarCompativel(this.base, chave, modelo, sistema, msgs); },
+      chamar: function (chave, modelo, sistema, msgs, limite) { return chamarCompativel(this.base, chave, modelo, sistema, msgs, null, limite); },
       listar: function (chave) { return listarCompativel(this.base, chave); }
     },
     openai: {
@@ -4131,7 +4132,7 @@
       base: 'https://api.openai.com/v1',
       modelo: 'gpt-4o-mini',
       nota: { pt: 'Pago por uso, sem plano grátis.', en: 'Pay per use, no free plan.' },
-      chamar: function (chave, modelo, sistema, msgs) { return chamarCompativel(this.base, chave, modelo, sistema, msgs); },
+      chamar: function (chave, modelo, sistema, msgs, limite) { return chamarCompativel(this.base, chave, modelo, sistema, msgs, null, limite); },
       listar: function (chave) { return listarCompativel(this.base, chave); }
     },
     anthropic: {
@@ -4139,9 +4140,9 @@
       onde: 'https://console.anthropic.com/settings/keys',
       modelo: 'claude-3-5-haiku-20241022',
       nota: { pt: 'Pago por uso, sem plano grátis.', en: 'Pay per use, no free plan.' },
-      chamar: function (chave, modelo, sistema, mensagens) {
+      chamar: function (chave, modelo, sistema, mensagens, limite) {
         var corpo = {
-          model: modelo, max_tokens: 900,
+          model: modelo, max_tokens: limite || 900,
           messages: mensagens.map(function (m) {
             return { role: m.papel === 'ia' ? 'assistant' : 'user', content: m.texto };
           })
@@ -4176,10 +4177,10 @@
       modelo: '',
       nota: { pt: 'Qualquer serviço que fale o formato da OpenAI: Cerebras, Together, Hugging Face, um Ollama na sua rede… Cole o endereço da API e o nome do modelo.',
               en: 'Any service speaking the OpenAI format: Cerebras, Together, Hugging Face, an Ollama on your network… Paste the API address and the model name.' },
-      chamar: function (chave, modelo, sistema, msgs) {
+      chamar: function (chave, modelo, sistema, msgs, limite) {
         var base = IA.baseDe('personalizado');
         if (!base) return Promise.reject(new Error('sem-endereco'));
-        return chamarCompativel(base, chave, modelo, sistema, msgs);
+        return chamarCompativel(base, chave, modelo, sistema, msgs, null, limite);
       },
       listar: function (chave) {
         var base = IA.baseDe('personalizado');
@@ -4288,12 +4289,13 @@
         /* o servidor guarda a chave; o navegador so manda a pergunta */
         return fetch(proxy, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ provedor: prov, modelo: modelo, sistema: sistema, mensagens: msgs, app: cfg.app })
+          body: JSON.stringify({ provedor: prov, modelo: modelo, sistema: sistema, mensagens: msgs, app: cfg.app, limite: opcoes.limite || null })
         }).then(lerResposta).then(function (j) { return String(j.texto || j.resposta || '').trim(); });
       }
       var chave = IA.chave(prov);
       if (!chave && prov !== 'personalizado') return Promise.reject(new Error('sem-chave'));
-      return pr.chamar(chave, modelo, sistema, msgs);
+      /* opcoes.limite: tamanho maximo da resposta (textos longos, como termos) */
+      return pr.chamar(chave, modelo, sistema, msgs, opcoes.limite);
     },
 
     limparConversa: function () { IA._conversa = []; }

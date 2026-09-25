@@ -406,6 +406,8 @@
       N('O arquivo ajuda.json é publicado; a central do Assist ONE nos apps ainda vai ler dele.', 'ajuda.json is published; the Assist ONE centre in the apps still has to read it.')),
 
     F('termos.fluxo', 'termos', 'ativo', 1, N('Rascunho → revisão → aprovado → publicado', 'Draft → review → approved → published')),
+    F('termos.ia', 'termos', 'ativo', 1, N('Escrever, melhorar, conferir e traduzir termos com IA (grátis ou paga)', 'Write, improve, check and translate terms with AI (free or paid)')),
+    F('termos.agente', 'termos', 'ativo', 1, N('Agente de políticas: confere o que falta em cada app e escreve os rascunhos', 'Policy agent: checks what each app is missing and writes the drafts')),
     F('termos.bloqueio', 'termos', 'parcial', 1, N('Apps bloqueiam até a pessoa aceitar', 'Apps block until the person accepts'),
       N('O termos.json é publicado; a tela de aceite ainda entra no módulo comum dos apps.', 'termos.json is published; the acceptance screen still has to enter the apps\' shared module.')),
     F('termos.juridico', 'termos', 'especificar', 1, N('Validação jurídica dos textos', 'Legal review of the texts'),

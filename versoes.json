@@ -2,6 +2,23 @@
   "app": "rootify-one",
   "versoes": [
     {
+      "versao": "0.1.8",
+      "data": "2026-09-25",
+      "hora": "13:15:59",
+      "itens": {
+        "pt": [
+          "Termos e políticas: botão ✨ Escrever com IA no editor (escrever do zero, melhorar, conferir o que falta, traduzir PT↔EN). Usa a IA do cofre, grátis ou paga; o resultado entra como rascunho e dá para desfazer.",
+          "Novo 🤖 Agente de políticas: confere o que cada app precisa (termos, privacidade por app, avisos legais), escreve os rascunhos em PT e EN, confere e corrige cada um, e nunca publica.",
+          "Onde faltar informação, a IA escreve [A DEFINIR]; o envio para aprovação fica bloqueado até preencher. \"Dados que a IA usa\" (responsável, e-mail, encarregado, foro) preenchem esses pontos de uma vez."
+        ],
+        "en": [
+          "Terms and policies: ✨ Write with AI button in the editor (write from scratch, improve, check what is missing, translate PT↔EN). Uses the AI from the vault, free or paid; the result comes in as a draft and can be undone.",
+          "New 🤖 Policy agent: checks what each app needs (terms, per-app privacy, legal notices), writes PT and EN drafts, checks and fixes each one, and never publishes.",
+          "Where information is missing, the AI writes [TO BE DEFINED]; sending for approval is blocked until filled. \"Facts the AI uses\" (controller, e-mail, DPO, venue) fill those in at once."
+        ]
+      }
+    },
+    {
       "versao": "0.1.7",
       "data": "2026-09-25",
       "hora": "12:40:03",

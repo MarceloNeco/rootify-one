@@ -313,3 +313,11 @@ tr.rf-clicavel:hover td, tr.rf-clicavel:focus td { background: var(--acento-suav
   .rf-tabela-rola { max-height: none; overflow: visible; }
   body { background: #fff; color: #000; }
 }
+
+/* agente de políticas (IA) */
+.rf-ag-log { max-height: 22rem; overflow-y: auto; margin: 0; padding: .5rem .75rem .5rem 2rem; background: var(--sup2); border-radius: .5rem; font-size: .9rem; line-height: 1.5; white-space: pre-wrap; }
+.rf-ag-log li { margin: .1rem 0; }
+.rf-ag-doc { font-weight: 600; margin-top: .4rem !important; }
+.rf-ag-ok { color: var(--ok); }
+.rf-ag-erro { color: var(--er); }
+.rf-ag-inicio, .rf-ag-fim { font-weight: 600; }

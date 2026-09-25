@@ -22,6 +22,7 @@ HTML, CSS e JavaScript puros. Sem framework, sem passo de build. Abra e edite.
 | `rootify-dados.js` | regras: prazos (SLA), LGPD 15 dias, termos, geração e conferência dos arquivos master, automações, dados de exemplo | sim |
 | `rootify-telas-1.js` | telas: painel, apps, planos, serviços, usuários, suporte, base de conhecimento | sim |
 | `rootify-telas-2.js` | telas: termos, recados, anúncios, versões, publicar, papéis, equipe, privacidade, auditoria, integrações, automações, financeiro, telemetria, armazenamento, mapa, configurações | sim |
+| `rootify-ia-termos.js` | IA nos termos: botão ✨ do editor e o 🤖 Agente de políticas (usa `DGO.ia`; nunca publica, só escreve rascunhos) | sim |
 | `rootify-app.js` | telas de acesso (instalar, entrar, bloqueio), menu ☰, barra de baixo, busca, simulador de papel, roteador | com cuidado |
 | `diretrizes.js` | módulo comum da SolverONE (igual em todos os apps) | **não** — troque pela versão nova quando sair |
 | `diretrizes-config.js` | ajustes do módulo comum para este app (sem anúncios, login do módulo desligado) | pouco |
