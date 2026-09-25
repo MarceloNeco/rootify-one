@@ -242,8 +242,35 @@
     casca.hidden = false;
     RF.dados.Automacoes.vigiar();
     montarMenu(); montarBarraBaixo(); desenharFaixaSim();
-    if (!raiz.location.hash) raiz.location.hash = '#/painel';
+    /* sem rota no endereço: troca no lugar (sem criar entrada extra no histórico) */
+    if (!raiz.location.hash) { try { raiz.history.replaceState(raiz.history.state, '', '#/painel'); } catch (e) { raiz.location.hash = '#/painel'; } }
     renderizar();
+    prepararGuardaVoltar();
+  }
+
+  /* Voltar do celular na primeira tela: em vez de sair do RootifyONE sem aviso,
+     avisa "toque de novo para sair". A entrada extra no histórico só é criada
+     depois de um toque da pessoa (o Chrome ignora entradas criadas sem toque). */
+  var guarda = { pronta: false, armada: false };
+  function prepararGuardaVoltar() {
+    if (guarda.pronta) return;
+    guarda.pronta = true;
+    try { raiz.history.replaceState({ rfInicio: 1 }, ''); } catch (e) {}
+    d.addEventListener('pointerdown', armarGuarda, true);
+    d.addEventListener('keydown', armarGuarda, true);
+    raiz.addEventListener('popstate', function (e) {
+      if (!e.state || !e.state.rfInicio || !S.pessoa) return;
+      if (ui.modaisAbertos() || d.body.classList.contains('rf-menu-aberto')) return;
+      guarda.armada = false;           /* o próximo Voltar sai de verdade */
+      ui.aviso(T('Toque em Voltar de novo para sair do RootifyONE.', 'Press Back again to leave RootifyONE.'), 'info');
+    });
+  }
+  function armarGuarda() {
+    if (guarda.armada || !S.pessoa) return;
+    var st = raiz.history.state;
+    if (!st || !st.rfInicio) { guarda.armada = true; return; }   /* já há telas para voltar */
+    guarda.armada = true;
+    try { raiz.history.pushState({ rfGuarda: 1 }, ''); } catch (e) {}
   }
 
   function modulosVisiveis() {
@@ -568,7 +595,9 @@
       if (S.pessoa && C.aberto()) { desenharFaixaSim(); renderizar(); }
       else if (!C.equipe().length) telaInstalar(); else telaEntrar();
     });
-    if (!C.equipe().length) telaInstalar(); else telaEntrar();
+    if (!C.equipe().length) { telaInstalar(); return; }
+    /* recarregou a página (F5) com a sessão ainda valendo: continua sem pedir de novo */
+    RF.Continuidade.retomar().then(function (p) { if (p) abrirCasca(); else telaEntrar(); });
   }
   if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', iniciar); else iniciar();
 })(window);

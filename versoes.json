@@ -2,6 +2,20 @@
   "app": "rootify-one",
   "versoes": [
     {
+      "versao": "0.1.3",
+      "data": "2026-09-25",
+      "itens": {
+        "pt": [
+          "Recarregar a página (F5) não pede mais para entrar de novo: a sessão continua até o prazo do bloqueio automático. Bloquear, sair ou fechar a aba encerra.",
+          "Botão Voltar do celular: volta tela por tela dentro do RootifyONE e, na primeira tela, avisa \"toque de novo para sair\" em vez de sair direto."
+        ],
+        "en": [
+          "Reloading the page (F5) no longer asks you to sign in again: the session continues until the auto-lock time. Locking, signing out or closing the tab ends it.",
+          "Phone Back button: goes back screen by screen inside RootifyONE and, on the first screen, warns \"press again to leave\" instead of leaving at once."
+        ]
+      }
+    },
+    {
       "versao": "0.1.2",
       "data": "2026-09-25",
       "itens": {

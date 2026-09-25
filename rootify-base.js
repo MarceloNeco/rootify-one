@@ -17,7 +17,7 @@
   var RF = raiz.RF = raiz.RF || {};
   var d = document;
   var PREFIXO = 'rootify:v1:';
-  var VERSAO = '0.1.2';
+  var VERSAO = '0.1.3';
   RF.VERSAO = VERSAO;
   RF.telas = RF.telas || {};
   RF.h = RF.h || {};
@@ -204,6 +204,74 @@
       });
     }
   };
+
+  /* Continuar a sessão ao recarregar a página (F5).
+     A chave de dados é embrulhada por uma chave de sessão NÃO exportável,
+     guardada no IndexedDB; o pacote embrulhado fica no sessionStorage,
+     que é desta aba só e some quando a aba é fechada. Vale até o prazo do
+     bloqueio automático; bloquear ou sair apaga as duas partes. */
+  var Continuidade = {
+    NOME: 'rootify:v1:sessao',
+    _chave: function (criar) {
+      return Aparelho.abrir().then(function (db) {
+        return new Promise(function (ok, erro) {
+          if (criar) {
+            sub.generateKey({ name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']).then(function (k) {
+              var w = db.transaction('chaves', 'readwrite').objectStore('chaves').put(k, 'sessao');
+              w.onsuccess = function () { ok(k); }; w.onerror = function () { erro(w.error); };
+            }, erro);
+          } else {
+            var r = db.transaction('chaves', 'readonly').objectStore('chaves').get('sessao');
+            r.onsuccess = function () { ok(r.result || null); }; r.onerror = function () { erro(r.error); };
+          }
+        });
+      });
+    },
+    ler: function () { try { return JSON.parse(raiz.sessionStorage.getItem(Continuidade.NOME) || 'null'); } catch (e) { return null; } },
+    gravar: function (o) { try { raiz.sessionStorage.setItem(Continuidade.NOME, JSON.stringify(o)); } catch (e) {} },
+    prazo: function () {
+      var min = Sessao.minutosBloqueio();
+      return agoraMs() + (min > 0 ? min : 12 * 60) * 60000;     /* "nunca bloquear": no máximo 12 h */
+    },
+    guardar: function (pessoa, metodo) {
+      if (!Cofre.dekBruta || !raiz.sessionStorage) return Promise.resolve();
+      return Continuidade._chave(true).then(function (k) { return cifrarBytes(k, Cofre.dekBruta); }).then(function (pac) {
+        Continuidade.gravar({ pessoa: pessoa.id, metodo: metodo, pac: pac, ate: Continuidade.prazo() });
+      }).catch(function () {});
+    },
+    renovar: function () {
+      var o = Continuidade.ler();
+      if (!o || agoraMs() - (Continuidade._ult || 0) < 20000) return;
+      Continuidade._ult = agoraMs(); o.ate = Continuidade.prazo(); Continuidade.gravar(o);
+    },
+    apagar: function () {
+      try { raiz.sessionStorage.removeItem(Continuidade.NOME); } catch (e) {}
+      return Aparelho.abrir().then(function (db) {
+        return new Promise(function (ok) {
+          var t = db.transaction('chaves', 'readwrite').objectStore('chaves').delete('sessao');
+          t.onsuccess = t.onerror = function () { ok(); };
+        });
+      }).catch(function () {});
+    },
+    /* devolve a pessoa se deu para continuar; senão, null */
+    retomar: function () {
+      var o = Continuidade.ler();
+      if (!o) return Promise.resolve(null);
+      if (!o.ate || o.ate < agoraMs()) { return Continuidade.apagar().then(function () { return null; }); }
+      var pessoa = Cofre.pessoa(o.pessoa);
+      if (!pessoa || !pessoa.ativo || pessoa.trocarSenha) { return Continuidade.apagar().then(function () { return null; }); }
+      return Continuidade._chave(false).then(function (k) {
+        if (!k) throw new Error('sem-chave');
+        return decifrarBytes(k, o.pac);
+      }).then(function (bruta) {
+        return Cofre.abrirCom(bruta).then(function () {
+          Sessao.iniciar(Cofre.pessoa(pessoa.id), o.metodo || 'sessao', true);
+          return Cofre.pessoa(pessoa.id);
+        });
+      }).catch(function () { return Continuidade.apagar().then(function () { return null; }); });
+    }
+  };
+  function agoraMs() { return Date.now(); }
 
   /* ------------------------------------------------------------------
      3. COFRE
@@ -413,10 +481,11 @@
      ------------------------------------------------------------------ */
   var Sessao = {
     pessoa: null, metodo: null, simular: null, _timer: null,
-    iniciar: function (pessoa, metodo) {
+    iniciar: function (pessoa, metodo, retomada) {
       Sessao.pessoa = pessoa; Sessao.metodo = metodo; Sessao.simular = null;
       gravarLocal('ultima', pessoa.email);
       Sessao.vigiar();
+      if (!retomada) Continuidade.guardar(pessoa, metodo);
     },
     minutosBloqueio: function () {
       var c = Cofre.db.config || {}; return c.bloqueioMin === 0 ? 0 : (c.bloqueioMin || 15);
@@ -427,6 +496,7 @@
         clearTimeout(Sessao._timer);
         var min = Sessao.minutosBloqueio();
         if (min > 0) Sessao._timer = setTimeout(function () { Sessao.bloquear(); }, min * 60000);
+        Continuidade.renovar();
       };
       if (!Sessao._ouvindo) {
         ['pointerdown', 'keydown', 'scroll', 'touchstart'].forEach(function (ev) {
@@ -441,6 +511,7 @@
       var quem = Sessao.pessoa;
       Log.registrar('seguranca', 'bloquear', quem.email, null, null, T('Tela bloqueada', 'Screen locked')).then(function () {
         clearTimeout(Sessao._timer);
+        Continuidade.apagar();
         Cofre.fechar(); Sessao.pessoa = null; Sessao.simular = null;
         RF.emitir('bloqueado', { pessoa: quem });
       });
@@ -450,6 +521,7 @@
       var quem = Sessao.pessoa;
       Log.registrar('seguranca', 'sair', quem.email, null, null, T('Saiu', 'Signed out')).then(function () {
         clearTimeout(Sessao._timer);
+        Continuidade.apagar();
         Cofre.fechar(); Sessao.pessoa = null; Sessao.simular = null;
         RF.emitir('saiu', { pessoa: quem });
       });
@@ -1016,7 +1088,7 @@
     mascararEmail: mascararEmail, mascararTexto: mascararTexto, copiar: copiar, baixar: baixar, clonar: clonar,
     idioma: idioma, lerLocal: lerLocal, gravarLocal: gravarLocal, apagarLocal: apagarLocal, sha256: sha256,
     criarZip: criarZip, csv: csv, lerCsv: lerCsv, PREFIXO: PREFIXO };
-  RF.Cofre = Cofre; RF.Sessao = Sessao; RF.Papeis = Papeis; RF.Log = Log; RF.Digital = Digital; RF.Rota = Rota;
+  RF.Cofre = Cofre; RF.Sessao = Sessao; RF.Continuidade = Continuidade; RF.Papeis = Papeis; RF.Log = Log; RF.Digital = Digital; RF.Rota = Rota;
   RF.GitHub = GitHub; RF.ui = ui;
   RF.instalar = instalar; RF.entrar = entrar; RF.definirPin = definirPin; RF.trocarSenha = trocarSenha;
   RF.novoCodigo = novoCodigo; RF.pode = pode; RF.noEscopo = noEscopo; RF.ehDono = ehDono; RF.mudar = mudar;
