@@ -1301,7 +1301,7 @@
   RF.telas.configuracoes = function (area, rota) {
     var aba = rota.sub || 'geral';
     RF.pagina(area, 'configuracoes', null);
-    area.appendChild(ui.abas([{ id: 'geral', nome: T('Geral', 'General') }, { id: 'seguranca', nome: T('Minha segurança', 'My security') }, { id: 'barra', nome: T('Barra de atalhos', 'Shortcut bar') },
+    area.appendChild(ui.abas([{ id: 'geral', nome: T('Geral', 'General') }, { id: 'ia', nome: '✨ IA' }, { id: 'seguranca', nome: T('Minha segurança', 'My security') }, { id: 'barra', nome: T('Barra de atalhos', 'Shortcut bar') },
       { id: 'backup', nome: T('Cópia de segurança', 'Backup') }, { id: 'exemplo', nome: T('Dados de exemplo', 'Sample data') }, { id: 'sobre', nome: T('Sobre', 'About') }], aba, function (a) { RF.Rota.ir('configuracoes', a); }));
     var cfg = C.obj('config'), podeEd = RF.pode('configuracoes:editar');
     if (aba === 'geral') {
@@ -1362,6 +1362,7 @@
       var tent = C.lista('log').filter(function (e) { return e.modulo === 'seguranca' && (e.alvo === p.email || e.quem === p.email); }).slice(-10).reverse();
       area.appendChild(ui.secao(T('Acessos recentes', 'Recent access'), [el('ul', {}, tent.map(function (e) { return el('li', { texto: U.data(e.quando, true) + ' · ' + e.resumo }); }))]));
     }
+    if (aba === 'ia') secaoIA(area, cfg, podeEd);
     if (aba === 'barra') area.appendChild(montadorBarra(cfg, podeEd));
     if (aba === 'backup') {
       area.appendChild(ui.secao(T('Fazer cópia de segurança', 'Make a backup'), [
@@ -1423,6 +1424,45 @@
       ]));
     }
   };
+
+  /* ---- IA: cofre de chaves, chat e política — tudo num lugar só ---- */
+  function secaoIA(area, cfg, podeEd) {
+    var DGO = raiz.DGO;
+    if (!DGO || !DGO.ia) { area.appendChild(el('div', { class: 'rf-vazio' }, [el('p', { texto: T('Módulo comum de IA não carregado.', 'Shared AI module not loaded.') })])); return; }
+    if (!RF._ouveChavesIAConfig) {
+      RF._ouveChavesIAConfig = true;
+      ['dgo:ia-chaves', 'dgo:ia-uso'].forEach(function (ev) { raiz.document.addEventListener(ev, function () { var r = RF.Rota.atual(); if (r.modulo === 'configuracoes' && r.sub === 'ia') RF.renderizar(); }); });
+    }
+    var linhas = (DGO.ia.capacidades ? DGO.ia.capacidades() : []).map(function (c) {
+      var pid = DGO.ia.provedorPara(c.id), pr = pid && DGO.ia.provedores(c.id).filter(function (x) { return x.id === pid; })[0];
+      return el('li', {}, [c.icone + ' ' + c.nome + ': ', pr && (pr.temChave || pr.semChave) ? el('b', { texto: pr.nome + (pr.modelo ? ' · ' + pr.modelo : '') }) : ui.selo(T('nenhuma chave', 'no key'), 'atencao')]);
+    });
+    var temAlguma = DGO.ia.provedoresProntos && DGO.ia.provedoresProntos().length;
+    area.appendChild(ui.secao('✨ ' + T('Inteligência artificial', 'Artificial intelligence'), [
+      el('p', { class: 'rf-dica', texto: T('A chave é sua e fica cifrada só neste navegador; vale em todos os apps da SolverONE (mesmo cofre). O guia abre o site de cada provedor, mostra onde clicar e testa a chave. Plano grátis primeiro.',
+        'The key is yours and stays encrypted only in this browser; it works in every SolverONE app (same vault). The guide opens each provider\'s site, shows where to click and tests the key. Free plan first.') }),
+      el('h3', { texto: T('Em uso agora', 'In use now') }),
+      el('ul', {}, linhas),
+      el('div', { class: 'rf-acoes' }, [
+        ui.botao('🔑 ' + (temAlguma ? T('Cofre de chaves e guia', 'Key vault and guide') : T('Colar uma chave grátis (guia passo a passo)', 'Paste a free key (step-by-step guide)')), function () { DGO.ia.guia(); }, 'pri'),
+        ui.botao('💬 ' + T('Perguntar à IA (chat)', 'Ask the AI (chat)'), function () { DGO.ia.abrir(); }),
+        DGO.abrirConfiguracoes ? ui.botao('📶 ' + T('Rede: usar IA no Wi-Fi ou dados', 'Network: AI on Wi-Fi or mobile data'), function () { DGO.abrirConfiguracoes({ secoes: ['rede', 'notificacoes'] }); }) : null
+      ])
+    ]));
+    var pol = ui.escolha([['compartilhada', T('Uma chave vale para todos os apps (padrão)', 'One key works for every app (default)')], ['por-app', T('Uma chave por app', 'One key per app')]], cfg.iaPolitica || 'compartilhada', { disabled: !RF.pode('integracoes:editar') });
+    pol.onchange = function () { var a = cfg.iaPolitica; cfg.iaPolitica = pol.value; RF.mudar('config', 'integracoes', 'ia-politica', '', a, pol.value, T('Política de chaves de IA: ', 'AI key policy: ') + pol.value).then(function () { ui.aviso(T('Salvo.', 'Saved.')); }); };
+    area.appendChild(ui.secao(T('Política da plataforma', 'Platform policy'), [
+      el('p', { class: 'rf-dica', texto: T('Vale para os apps dos clientes. O RootifyONE nunca lê a chave de ninguém; chave paga pela plataforma só existirá no proxy do servidor.', 'Applies to the customer apps. RootifyONE never reads anyone\'s key; a platform-paid key will only exist in the server proxy.') }),
+      ui.campo(T('Chaves de IA nos apps', 'AI keys in the apps'), pol)
+    ]));
+    area.appendChild(ui.secao(T('Onde a IA é usada aqui dentro', 'Where AI is used in here'), [
+      el('ul', {}, [
+        el('li', {}, [T('Suporte: ', 'Support: '), T('sugestão de resposta com dados pessoais mascarados.', 'reply suggestion with personal data masked.')]),
+        el('li', {}, [T('Termos: ', 'Terms: '), T('✨ Escrever com IA e o 🤖 Agente de políticas (sempre como rascunho; nunca publica).', '✨ Write with AI and the 🤖 Policy agent (always as draft; never publishes).')]),
+        el('li', {}, [T('AssistONE: ', 'AssistONE: '), T('atalho "Perguntar à IA" no balão.', '"Ask the AI" shortcut in the balloon.')])
+      ])
+    ]));
+  }
 
   /* ---- Aparência: tema, tamanho do texto e movimento (por aparelho) ---- */
   function secaoAparencia() {

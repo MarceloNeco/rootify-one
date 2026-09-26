@@ -147,10 +147,10 @@
                'Everything that is grey, with the question still to answer. It can be exported to the guidelines spreadsheet.') },
     { id: 'configuracoes', grupo: 'plataforma', icone: '⚙️', recurso: 'configuracoes', estado: 'ativo',
       nome: N('Configurações', 'Settings'),
-      partes: [{ sub: 'geral', nome: N('Geral e aparência', 'General and appearance') }, { sub: 'seguranca', nome: N('Minha segurança', 'My security') }, { sub: 'barra', nome: N('Barra de atalhos', 'Shortcut bar') },
+      partes: [{ sub: 'geral', nome: N('Geral e aparência', 'General and appearance') }, { sub: 'ia', nome: N('✨ IA (chaves e chat)', '✨ AI (keys and chat)') }, { sub: 'seguranca', nome: N('Minha segurança', 'My security') }, { sub: 'barra', nome: N('Barra de atalhos', 'Shortcut bar') },
                { sub: 'backup', nome: N('Cópia de segurança', 'Backup') }, { sub: 'sobre', nome: N('Sobre e novidades', 'About and what\'s new') }],
-      ajuda: N('Idioma, aparência, AssistONE, segurança de acesso (PIN e digital), bloqueio automático, barra de atalhos, cópia de segurança, dados de exemplo e novidades.',
-               'Language, appearance, AssistONE, access security (PIN and fingerprint), auto-lock, shortcut bar, backup, sample data and what\'s new.') }
+      ajuda: N('Idioma, aparência, AssistONE, IA (chaves e chat), segurança de acesso (PIN e digital), bloqueio automático, barra de atalhos, cópia de segurança, dados de exemplo e novidades.',
+               'Language, appearance, AssistONE, AI (keys and chat), access security (PIN and fingerprint), auto-lock, shortcut bar, backup, sample data and what\'s new.') }
   ];
 
   /* Ações rápidas no topo do ☰ (até 4): o que a equipe mais faz.
