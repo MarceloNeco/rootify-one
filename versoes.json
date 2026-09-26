@@ -2,6 +2,19 @@
   "app": "rootify-one",
   "versoes": [
     {
+      "versao": "0.2.1",
+      "data": "2026-09-26",
+      "hora": "10:20:00",
+      "itens": {
+        "pt": [
+          "Ícone de Configurações (⚙️) agora aparece colorido e nítido, como os outros ícones do cabeçalho e do menu."
+        ],
+        "en": [
+          "Settings icon (⚙️) now shows in colour and sharp, like the other header and menu icons."
+        ]
+      }
+    },
+    {
       "versao": "0.2.0",
       "data": "2026-09-26",
       "hora": "09:30:00",

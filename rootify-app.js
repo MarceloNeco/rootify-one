@@ -2,7 +2,7 @@
    RootifyONE — CASCA DO APP
    ---------------------------------------------------------------------
    Telas de acesso (instalação, entrar, bloqueio, código de recuperação),
-   cabeçalho (☰ · marca · PT|EN · 🔍 📥 ⚙ 🏠 👤), menu ☰ (ações rápidas,
+   cabeçalho (☰ · marca · PT|EN · 🔍 📥 ⚙️ 🏠 👤), menu ☰ (ações rápidas,
    grupos e acordeão), barra de atalhos, busca compartilhada (lupa e
    AssistONE), caixa de entrada 📥, aparência, simulador de papel e o
    "roteador" que chama a tela certa de RF.telas.
@@ -687,7 +687,7 @@
         lista.push({ id: 'email:' + m.id, prio: 'info', icone: '✉️', quando: m.criadoEm, titulo: m.assunto, texto: T('E-mail pronto na caixa de saída para ', 'E-mail ready in the outbox for ') + m.para, ir: ['emails', 'saida', m.id] });
       });
       C.lista('avisos').slice(-100).forEach(function (a) {
-        lista.push({ id: 'aviso:' + a.id, prio: a.prio || 'info', icone: a.icone || '⚙', quando: a.quando, titulo: a.titulo, texto: a.texto || '', ir: a.ir || null, arquivavel: true });
+        lista.push({ id: 'aviso:' + a.id, prio: a.prio || 'info', icone: a.icone || '⚙️', quando: a.quando, titulo: a.titulo, texto: a.texto || '', ir: a.ir || null, arquivavel: true });
       });
       var lidos = C.obj('config').inboxLidos || {};
       lista.forEach(function (i) { i.lido = !!lidos[i.id]; });
@@ -698,7 +698,7 @@
     /* aviso gerado pelo sistema/automação: fica guardado para quem não viu na hora */
     avisar: function (titulo, texto, prio, ir, icone) {
       if (!C.aberto()) return;
-      var a = { id: U.uid('av-'), quando: U.agora(), titulo: titulo, texto: texto || '', prio: prio || 'info', ir: ir || null, icone: icone || '⚙' };
+      var a = { id: U.uid('av-'), quando: U.agora(), titulo: titulo, texto: texto || '', prio: prio || 'info', ir: ir || null, icone: icone || '⚙️' };
       var lista = C.lista('avisos'); lista.push(a);
       if (lista.length > 300) lista.splice(0, lista.length - 300);
       C.salvar('avisos').then(atualizarBolha);

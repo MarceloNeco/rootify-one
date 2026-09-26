@@ -338,10 +338,10 @@
           if (a.tipo === 'etiqueta') { alvo.etiquetas = alvo.etiquetas || []; if (alvo.etiquetas.indexOf(a.valor) === -1) alvo.etiquetas.push(a.valor); }
           if (a.tipo === 'avisar') {
             var msg = (a.valor || T(r.nome)) + (alvo.numero ? ' · #' + alvo.numero : '');
-            RF.ui.aviso('⚙ ' + msg, 'info');
+            RF.ui.aviso('⚙️ ' + msg, 'info');
             /* fica também na caixa de entrada 📥, para quem não viu na hora */
             var ir = alvo.numero && alvo.assunto ? ['suporte', 'chamado', alvo.id] : alvo.tipo && alvo.prazo ? ['privacidade'] : null;
-            if (RF.Inbox) RF.Inbox.avisar('⚙ ' + T(r.nome), msg, 'info', ir);
+            if (RF.Inbox) RF.Inbox.avisar('⚙️ ' + T(r.nome), msg, 'info', ir);
             try { if (raiz.DGO && raiz.DGO.notificacoes && raiz.DGO.notificacoes.estado() === 'permitido') raiz.DGO.notificacoes.mostrar('rootify', { titulo: 'RootifyONE', texto: msg }); } catch (e) {}
           }
           /* "enviar e-mail": monta pelo modelo e põe na caixa de saída (sai sozinho se houver provedor) */
@@ -437,8 +437,8 @@
     C.lista('kb').push(
       { id: U.uid('kb-'), app: '*', categoria: 'conta', estado: 'publicado', atualizadoEm: U.agora(), autor: 'sistema', exemplo: true,
         titulo: { pt: 'Como entrar com a digital', en: 'How to sign in with your fingerprint' },
-        texto: { pt: 'Abra Configurações ⚙, toque em Conta e depois em "Usar a digital". O aparelho vai pedir a digital uma vez para registrar.',
-                 en: 'Open Settings ⚙, tap Account and then "Use fingerprint". The device will ask for your fingerprint once to register it.' },
+        texto: { pt: 'Abra Configurações ⚙️, toque em Conta e depois em "Usar a digital". O aparelho vai pedir a digital uma vez para registrar.',
+                 en: 'Open Settings ⚙️, tap Account and then "Use fingerprint". The device will ask for your fingerprint once to register it.' },
         palavras: ['digital', 'biometria', 'fingerprint'] },
       { id: U.uid('kb-'), app: '*', categoria: 'duvida', estado: 'publicado', atualizadoEm: U.agora(), autor: 'sistema', exemplo: true,
         titulo: { pt: 'O app funciona sem internet?', en: 'Does the app work offline?' },
