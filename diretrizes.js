@@ -21,7 +21,7 @@
 (function (raiz) {
   'use strict';
 
-  var VERSAO = '1.1.3';
+  var VERSAO = '1.2.0';
   if (raiz.DGO && raiz.DGO.__carregado) { return; }
 
   /* ------------------------------------------------------------------
@@ -96,6 +96,11 @@
       servicos: [],                 // [{ id, nome:{pt,en}, descricao:{pt,en}, nivel }]
       aoQuererPremium: null
     },
+
+    /* arquivos master publicados pelo RootifyONE (mesma origem): recursos/<app>.json
+       (feature flags e comportamentos) e conteudo/<app>.json (textos, fotos, videos).
+       O app le ao abrir e guarda copia local como reserva. '' = desligado. */
+    fonteCentral: '/solverone-dados/',
 
     /* trechos que o tradutor e o formatador de datas nao podem tocar.
        O modulo marca sozinho, entao nao e preciso editar o index.html. */
@@ -5149,6 +5154,62 @@
   /* ------------------------------------------------------------------
      21. API PUBLICA
      ------------------------------------------------------------------ */
+
+  /* ------------------------------------------------------------------
+     CENTRAL: arquivos master do RootifyONE (recursos e conteudo por app)
+     O RootifyONE publica recursos/<app>.json e conteudo/<app>.json no
+     repositorio solverone-dados (mesma origem). Aqui o app le com rede
+     primeiro (no-cache, 4 s) e cai para a copia guardada; global e app
+     sao juntados (o app vence). Nada disso trava o app: sem arquivo,
+     valem os padroes do codigo.
+       DGO.recursos.ligado('videos-youtube', true)
+       DGO.recursos.valor('descanso.padraoSeg', 60)
+       DGO.conteudo.colecao('equipamentos')  -> { campos, itens } | null
+       DGO.conteudo.item('equipamentos', 'leg-press')
+       evento 'dgo:central' quando algo novo chegou da rede
+     ------------------------------------------------------------------ */
+  var Central = {
+    _mem: {},
+    base: function () { var b = cfg.fonteCentral; return b ? (b.charAt(b.length - 1) === '/' ? b : b + '/') : ''; },
+    ativo: function () { return !!Central.base(); },
+    _chave: function (nome) { return 'central:' + nome; },
+    guardado: function (nome) { return Central._mem[nome] || Guardar.ler(Central._chave(nome), null, true); },
+    ler: function (nome) {
+      if (!Central.ativo()) return Promise.resolve(Central.guardado(nome));
+      var ctrl = raiz.AbortController ? new AbortController() : null, prazo = setTimeout(function () { if (ctrl) ctrl.abort(); }, 4000);
+      return fetch(Central.base() + nome, { cache: 'no-cache', signal: ctrl ? ctrl.signal : undefined }).then(function (r) {
+        clearTimeout(prazo);
+        if (r.status === 404) { return null; }
+        if (!r.ok) throw new Error('http-' + r.status);
+        return r.json();
+      }).then(function (j) {
+        var antes = JSON.stringify(Central.guardado(nome) || null);
+        if (j) { Central._mem[nome] = j; Guardar.gravar(Central._chave(nome), j, true); }
+        if (j && antes !== JSON.stringify(j)) { try { d.dispatchEvent(new CustomEvent('dgo:central', { detail: { arquivo: nome } })); } catch (e) {} }
+        return j || Central.guardado(nome);
+      }).catch(function () { clearTimeout(prazo); return Central.guardado(nome); });
+    },
+    /* baixa os quatro arquivos do app (global + proprio) uma vez ao abrir */
+    atualizar: function () {
+      if (!Central.ativo()) return Promise.resolve();
+      var nomes = ['recursos/global.json', 'recursos/' + cfg.app + '.json', 'conteudo/global.json', 'conteudo/' + cfg.app + '.json'];
+      return Promise.all(nomes.map(function (n) { return Central.ler(n); }));
+    },
+    recursos: function () {
+      var g = Central.guardado('recursos/global.json') || {}, a = Central.guardado('recursos/' + cfg.app + '.json') || {};
+      return { recursos: Object.assign({}, g.recursos || {}, a.recursos || {}), comportamentos: Object.assign({}, g.comportamentos || {}, a.comportamentos || {}) };
+    },
+    ligado: function (id, padrao) { var r = Central.recursos().recursos[id]; return r && typeof r.ligado === 'boolean' ? r.ligado : (padrao !== false); },
+    valor: function (id, padrao) { var c = Central.recursos().comportamentos; return c[id] === undefined ? padrao : c[id]; },
+    colecao: function (id) {
+      var a = Central.guardado('conteudo/' + cfg.app + '.json'), g = Central.guardado('conteudo/global.json');
+      return (a && a.colecoes && a.colecoes[id]) || (g && g.colecoes && g.colecoes[id]) || null;
+    },
+    item: function (colecao, id) { var c = Central.colecao(colecao); return c ? (c.itens || []).filter(function (i) { return i.id === id; })[0] || null : null; },
+    /* texto PT/EN de um item no idioma atual */
+    texto: function (v) { if (!v) return ''; if (typeof v === 'string') return v; return v[Idioma.atual] || v.pt || v.en || ''; }
+  };
+
   var API = {
     __carregado: true,
     versao: VERSAO,
@@ -5192,6 +5253,8 @@
         PWA.preparar();
         if (cfg.login.biometria) Biometria.verificarAparelho();
         Notif.iniciar();
+        /* recursos, comportamentos e conteudo publicados pelo RootifyONE (nao trava o app) */
+        try { Central.atualizar(); } catch (e) {}
         var con = navigator.connection;
         if (con && con.addEventListener) {
           con.addEventListener('change', function () { d.dispatchEvent(new CustomEvent('dgo:rede', { detail: { tipo: Rede.tipo() } })); });
@@ -5363,6 +5426,11 @@
         return Niveis.atual();
       }
     },
+
+    /* arquivos master do RootifyONE: recursos (flags), comportamentos e conteudo por app */
+    central: { ler: function (n) { return Central.ler(n); }, atualizar: function () { return Central.atualizar(); }, ativo: function () { return Central.ativo(); }, guardado: function (n) { return Central.guardado(n); } },
+    recursos: { ligado: function (id, p) { return Central.ligado(id, p); }, valor: function (id, p) { return Central.valor(id, p); }, todos: function () { return Central.recursos(); } },
+    conteudo: { colecao: function (id) { return Central.colecao(id); }, item: function (c, id) { return Central.item(c, id); }, texto: function (v) { return Central.texto(v); } },
 
     /* e-mail */
     email: Email,

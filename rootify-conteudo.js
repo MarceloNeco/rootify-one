@@ -276,5 +276,5 @@
     });
   }
 
-  RF.Conteudo = { TIPOS: TIPOS, arquivos: arquivos, conferir: conferir, importar: importarDoApp, ytId: ytId };
+  RF.Conteudo = { TIPOS: TIPOS, tiposDe: tiposDe, arquivos: arquivos, conferir: conferir, importar: importarDoApp, ytId: ytId };
 })(window);

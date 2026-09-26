@@ -234,6 +234,9 @@
       return { id: k.id, app: k.app, categoria: k.categoria || '', titulo: k.titulo, texto: k.texto, palavras: k.palavras || [], atualizadoEm: k.atualizadoEm };
     }) })) });
 
+    /* recursos/<app>.json e conteudo/<app>.json (rootify-recursos.js) */
+    if (RF.Recursos) { RF.Recursos.garantir(); RF.Recursos.arquivosMaster(cab, j).forEach(function (a) { arquivos.push(a); }); }
+
     var porApp = {};
     C.lista('versoes').forEach(function (v) { (porApp[v.app] = porApp[v.app] || []).push(v); });
     Object.keys(porApp).forEach(function (app) {
@@ -280,6 +283,14 @@
       if (v) { bil(v.titulo, T('Termo ', 'Term ') + v.titulo.pt); bil(v.texto, T('Termo ', 'Term ') + v.titulo.pt); }
       if (Termos.ultima(t).estado === 'aprovado') avisos.push(T('Termo aprovado aguardando publicação: ', 'Approved term awaiting publication: ') + Termos.ultima(t).titulo.pt);
     });
+    C.lista('colecoes').forEach(function (col) {
+      col.itens.filter(function (it) { return it.ativo !== false; }).forEach(function (it) {
+        col.campos.forEach(function (f) {
+          if (f.tipo !== 'bilingue' && f.tipo !== 'bilingue-longo') return;
+          var v = it.valores[f.id]; if (v && v.pt && !v.en) avisos.push(T('Conteúdo ', 'Content ') + col.app + '/' + col.id + '/' + it.id + T(': falta o texto em inglês de ', ': English text missing for ') + T(f.nome));
+        });
+      });
+    });
     if (RF.Conteudo) RF.Conteudo.conferir(erros, avisos);
     return { erros: erros, avisos: avisos };
   }
@@ -310,6 +321,9 @@
       '| recados.json | avisos para a caixa de recados dos apps |\n' +
       '| anuncios.json | anúncios da faixa e do pop-up |\n' +
       '| ajuda.json | artigos de ajuda do Assist ONE |\n' +
+      '| recursos/<app>.json | recursos ligados/desligados (feature flags) e comportamentos do app; recursos/global.json vale para todos |\n' +
+      '| conteudo/<app>.json | conteúdo editável do app (coleções: textos PT/EN, fotos, vídeos do YouTube, links) |\n' +
+      '| conteudo/<app>/*.jpg | fotos enviadas pelo RootifyONE |\n' +
       '| versoes/<app>.json | o que cada versão de cada app trouxe |\n\n' +
       'Nenhum dado pessoal mora aqui: este repositório é público.\n';
   }

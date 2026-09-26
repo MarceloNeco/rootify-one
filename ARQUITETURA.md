@@ -24,6 +24,7 @@ HTML, CSS e JavaScript puros. Sem framework, sem passo de build. Abra e edite.
 | `rootify-telas-1.js` | telas: painel, apps, planos, serviços, usuários, suporte, base de conhecimento | sim |
 | `rootify-telas-2.js` | telas: termos, recados, anúncios, versões, publicar, papéis, equipe, privacidade, auditoria, integrações, automações, financeiro, telemetria, armazenamento, mapa, configurações | sim |
 | `rootify-ia-termos.js` | IA nos termos: botão ✨ do editor e o 🤖 Agente de políticas (usa `DGO.ia`; nunca publica, só escreve rascunhos) | sim |
+| `rootify-recursos.js` | **Controle dos apps**: feature flags, comportamentos e coleções genéricas de conteúdo (aba Conteúdo também abre o editor tipado de `rootify-conteudo.js`) (textos PT/EN, fotos, vídeos do YouTube, links) por app; fotos sobem pelo GitHub; gera `recursos/<app>.json` e `conteudo/<app>.json` | sim (sementes em `RECURSOS_INICIAIS`, `COMPORTAMENTOS_INICIAIS`, `CONTEUDO_INICIAL` no catálogo) |
 | `rootify-email.js` | **E-mails**: remetentes @solverone.com.br, modelos PT/EN, caixa de saída, envio pelo proxy; API `RF.Email.enfileirar/enviar/abrirCliente`; tela `emails` | sim |
 | `rootify-conteudo.js` | **Conteúdo dos apps**: `TIPOS` (o que cada app expõe: hoje `rise-one` › aparelhos), tela `conteudo-apps` (importar do app, editar texto PT/EN, termos, grupos, foto, vídeos do YouTube), `RF.Conteudo.arquivos()` gera `conteudo/<app>/<tipo>.json` + fotos, `RF.Conteudo.conferir()` entra na conferência de Publicar | sim (um app novo = uma entrada em `TIPOS`) |
 | `rootify-assist.js` | **AssistONE**: personagem, balão "Você está em…" com atalhos (mapa `MAPA` por tela), tour, busca no balão, passo a passo (`PASSOS`), dicas, cartão das Configurações | sim (o mapa por tela cresce aqui) |
@@ -62,8 +63,20 @@ HTML, CSS e JavaScript puros. Sem framework, sem passo de build. Abra e edite.
    (catálogo) com `estado: 'especificar'` e a pergunta em `falta`; na tela use
    `RF.ui.cinza('id')` ou `RF.ui.botaoCinza(rotulo, 'id')`.
 6. **Arquivos master** (`apps.json`, `planos.json`, `servicos/<app>.json`, `termos.json`,
-   `recados.json`, `anuncios.json`, `ajuda.json`, `versoes/<app>.json`, `conteudo/<app>/<tipo>.json` e `conteudo/<app>/fotos/`) têm o mesmo formato que
-   terão as coleções no Firestore. Mudar o formato = mudar os apps que os leem.
+   `recados.json`, `anuncios.json`, `ajuda.json`, `versoes/<app>.json`, `recursos/<app>.json`,
+   `conteudo/<app>.json`, `conteudo/<app>/<tipo>.json` e `conteudo/<app>/fotos/`) têm o mesmo formato que terão as coleções no Firestore. Mudar o formato
+   = mudar os apps que os leem.
+   - `recursos/<app>.json`: `{ app, recursos: { id: { ligado, desde, nome } }, comportamentos: { id: valor } }`;
+     `recursos/global.json` vale para todos e o app vence.
+   - `conteudo/<app>.json`: `{ app, colecoes: { <id>: { nome, campos: [{ id, nome, tipo }], itens: [{ id, …valores }] } } }`.
+     Tipos de campo: texto, texto-longo, bilingue, bilingue-longo, numero, sim-nao, imagens (URLs),
+     videos (ids do YouTube), links, lista.
+   - O app lê pelo módulo comum: `DGO.recursos.ligado(id, padrao)`, `DGO.recursos.valor(id, padrao)`,
+     `DGO.conteudo.colecao(id)`, `DGO.conteudo.item(colecao, id)`; sem módulo, um adaptador próprio
+     (RiseONE: `conteudo-central.js`). O que o app não conhece é ignorado; o padrão fica no código.
+   - `conteudo/<app>/<tipo>.json` (rootify-conteudo.js): conteúdo tipado de um app, ex.: `aparelhos.json`
+     do RiseONE (`{ aparelhos: [{ id, nome, descricao, termos, grupos, foto, videos:[{titulo,url}], ativo }] }`),
+     com as fotos publicadas em `conteudo/<app>/fotos/`. Aberto pela aba Conteúdo do Controle dos apps.
 7. **Todo e-mail sai pela caixa de saída** (`RF.Email.enfileirar`), nunca por `mailto:` solto:
    assim fica registrado, com modelo, remetente certo e envio automático quando houver proxy.
    A chave do provedor de e-mail nunca fica aqui — só no proxy.
@@ -81,6 +94,9 @@ HTML, CSS e JavaScript puros. Sem framework, sem passo de build. Abra e edite.
   até 3 atalhos e uma dica; passo do onboarding em `PASSOS` se for configuração inicial.
 - **Conteúdo editável de um app novo**: entrada em `TIPOS` (`rootify-conteudo.js`) com `lista`, `arquivo`, `importar` (arquivo de reserva no app) e `grupos`; o app lê o JSON com reserva local.
 - **Uma ação rápida no ☰**: linha em `ACOES_RAPIDAS` (máximo 4 aparecem).
+- **Um recurso, comportamento ou coleção de conteúdo de um app**: pela própria tela Recursos e
+  conteúdo por app (fica no cofre e vai para os arquivos master); sementes para instalações novas
+  em `RECURSOS_INICIAIS`, `COMPORTAMENTOS_INICIAIS` e `CONTEUDO_INICIAL` no catálogo.
 
 ## Fases
 

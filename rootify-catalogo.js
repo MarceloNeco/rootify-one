@@ -51,6 +51,11 @@
       nome: N('Planos', 'Plans'),
       ajuda: N('Planos de usuário e o que cada um inclui. Preço e cobrança ficam em cinza até existir o meio de pagamento.',
                'User plans and what each includes. Price and billing stay grey until a payment method exists.') },
+    { id: 'recursos', grupo: 'produto', icone: '🎛️', recurso: 'recursos', estado: 'ativo',
+      nome: N('Controle dos apps', 'App control'),
+      partes: [{ sub: '*', nome: N('🌐 Global', '🌐 Global') }, { sub: 'rise-one', nome: N('🏃 RiseONE', '🏃 RiseONE') }, { sub: 'omnilife-one', nome: N('🧩 OmniLifeONE', '🧩 OmniLifeONE') }, { sub: 'moneytrio', nome: N('💰 MoneyTRIO', '💰 MoneyTRIO') }],
+      ajuda: N('O que o mercado chama de feature flags, remote config e CMS headless, num lugar só e por app: ligar e desligar funções, ajustar comportamentos e editar conteúdo (textos, fotos, vídeos do YouTube, links) sem commit. Vira recursos/<app>.json e conteudo/<app>.json (e, para conteúdo tipado como os aparelhos do RiseONE, conteudo/<app>/<tipo>.json).',
+               'What the market calls feature flags, remote config and headless CMS, in one place and per app: turn features on and off, adjust behaviours and edit content (texts, photos, YouTube videos, links) without a commit. Becomes recursos/<app>.json and conteudo/<app>.json.') },
     { id: 'servicos', grupo: 'produto', icone: '🧩', recurso: 'servicos', estado: 'ativo',
       nome: N('Serviços por plano', 'Services by plan'),
       ajuda: N('Cada função de cada app e quais planos podem usar. Padrão: todos os planos.',
@@ -81,7 +86,7 @@
       nome: N('Recados', 'Notices'),
       ajuda: N('Avisos da plataforma para a caixa de recados dos apps, com período e público.',
                'Platform notices for the apps\' inbox, with period and audience.') },
-    { id: 'conteudo-apps', grupo: 'conteudo', icone: '🧱', recurso: 'conteudo', estado: 'ativo',
+    { id: 'conteudo-apps', grupo: 'produto', icone: '🧱', recurso: 'conteudo', estado: 'ativo', oculto: true,   /* entra pelo Controle dos apps → Conteúdo */
       nome: N('Conteúdo dos apps', 'App content'),
       partes: [{ sub: 'rise-one', nome: N('RiseONE: aparelhos', 'RiseONE: equipment') }],
       ajuda: N('Texto, foto e vídeos do YouTube do que cada app mostra (hoje: aparelhos de academia do RiseONE). Edite aqui e publique; o app lê o conteudo/<app>/….json sem precisar de commit.',
@@ -182,6 +187,7 @@
     { id: 'apps', nome: N('Apps', 'Apps'), acoes: ['ver', 'criar', 'editar', 'excluir'] },
     { id: 'planos', nome: N('Planos', 'Plans'), acoes: ['ver', 'criar', 'editar', 'excluir'] },
     { id: 'servicos', nome: N('Serviços por plano', 'Services by plan'), acoes: ['ver', 'editar'] },
+    { id: 'recursos', nome: N('Recursos e comportamentos por app (feature flags)', 'Features and behaviours by app (feature flags)'), acoes: ['ver', 'editar'] },
     { id: 'usuarios', nome: N('Usuários (CRM)', 'Users (CRM)'), acoes: ['ver', 'criar', 'editar', 'excluir', 'exportar'] },
     { id: 'usuarios.pii', nome: N('Dados pessoais completos (sem máscara)', 'Full personal data (unmasked)'), acoes: ['ver'] },
     { id: 'usuarios.conta', nome: N('Ações na conta (bloquear, trocar plano)', 'Account actions (block, change plan)'), acoes: ['editar'] },
@@ -245,7 +251,7 @@
       nome: N('Administrador da plataforma', 'Platform administrator'),
       descricao: N('Opera todos os apps e publica. Não mexe em papéis nem no financeiro.',
                    'Runs every app and publishes. Does not touch roles or finance.'),
-      permissoes: varias(['apps', 'planos', 'servicos', 'usuarios', 'usuarios.pii:ver', 'usuarios.conta:editar',
+      permissoes: varias(['apps', 'planos', 'servicos', 'recursos', 'conteudo', 'usuarios', 'usuarios.pii:ver', 'usuarios.conta:editar',
         'suporte', 'suporte.atribuir:editar', 'suporte.config:editar', 'kb', 'termos:ver', 'termos:criar', 'termos:editar',
         'termos:publicar', 'recados', 'anuncios', 'conteudo', 'versoes', 'publicar', 'papeis:ver', 'equipe:ver', 'equipe:criar',
         'equipe:editar', 'integracoes', 'emails', 'emails.config:editar', 'privacidade:ver', 'auditoria', 'automacoes', 'telemetria', 'armazenamento',
@@ -254,7 +260,7 @@
       nome: N('Administrador de app', 'App administrator'),
       descricao: N('Cuida só dos apps que receber: serviços, usuários, chamados e conteúdo desses apps.',
                    'Looks after the apps assigned only: services, users, tickets and content of those apps.'),
-      permissoes: varias(['apps:ver', 'apps:editar', 'servicos', 'planos:ver', 'usuarios:ver', 'usuarios:editar',
+      permissoes: varias(['apps:ver', 'apps:editar', 'servicos', 'recursos', 'conteudo', 'planos:ver', 'usuarios:ver', 'usuarios:editar',
         'usuarios.conta:editar', 'suporte', 'suporte.atribuir:editar', 'kb', 'termos:ver', 'termos:criar',
         'termos:editar', 'recados', 'conteudo', 'versoes', 'publicar:ver', 'automacoes:ver', 'armazenamento:ver', 'emails:ver', 'emails:criar']) },
     { id: 'suporte-n1', cor: '#22c55e', escopoPorApp: true,
@@ -280,7 +286,7 @@
       descricao: N('Escreve termos (sem aprovar), recados, anúncios, novidades e ajuda.',
                    'Writes terms (cannot approve), notices, ads, release notes and help.'),
       permissoes: varias(['apps:ver', 'termos:ver', 'termos:criar', 'termos:editar', 'recados', 'anuncios', 'conteudo', 'versoes',
-        'kb', 'publicar:ver', 'emails:ver', 'emails:editar']) },
+        'kb', 'publicar:ver', 'emails:ver', 'emails:editar', 'recursos:ver']) },
     { id: 'financeiro', cor: '#0ea5e9',
       nome: N('Financeiro', 'Finance'),
       descricao: N('Custos, receita, preços dos planos. Vê usuários sem dado pessoal completo.',
@@ -301,7 +307,7 @@
       nome: N('Desenvolvimento', 'Development'),
       descricao: N('Apps, serviços, versões, integrações, automações e publicação técnica. Sem dado pessoal.',
                    'Apps, services, versions, integrations, automations and technical publishing. No personal data.'),
-      permissoes: varias(['apps', 'servicos', 'versoes', 'integracoes', 'telemetria', 'publicar', 'automacoes',
+      permissoes: varias(['apps', 'servicos', 'recursos', 'conteudo:ver', 'versoes', 'integracoes', 'telemetria', 'publicar', 'automacoes',
         'mapa', 'armazenamento', 'planos:ver', 'emails.config:editar', 'emails:ver']) },
     { id: 'analista', cor: '#94a3b8',
       nome: N('Analista (relatórios)', 'Analyst (reports)'),
@@ -406,6 +412,14 @@
     F('planos.profissional', 'planos', 'especificar', 2, N('Plano Profissional–Cliente', 'Professional–Client plan'),
       N('Quem paga (profissional ou cliente), quantos clientes, o que o profissional pode ver.', 'Who pays (professional or client), how many clients, what the professional may see.')),
 
+    F('recursos.flags', 'recursos', 'ativo', 1, N('Ligar/desligar funções por app (feature flags) sem commit', 'Turn app features on/off (feature flags) without a commit')),
+    F('recursos.comportamentos', 'recursos', 'ativo', 1, N('Comportamentos por app (valores que o app lê ao abrir)', 'Per-app behaviours (values the app reads when it opens)')),
+    F('recursos.conteudo', 'recursos', 'ativo', 1, N('Conteúdo por app: coleções com textos PT/EN, fotos, vídeos do YouTube e links', 'Per-app content: collections with PT/EN texts, photos, YouTube videos and links')),
+    F('recursos.fotos', 'recursos', 'ativo', 1, N('Fotos enviadas direto ao solverone-dados pelo token do GitHub', 'Photos sent straight to solverone-dados with the GitHub token')),
+    F('recursos.leitura', 'recursos', 'parcial', 1, N('Apps lendo recursos/ e conteudo/ ao abrir', 'Apps reading recursos/ and conteudo/ when they open'),
+      N('O módulo comum (DGO.central) já lê; cada app precisa ligar os pontos (RiseONE: adaptador conteudo-central.js). Os outros apps entram conforme forem atualizados.', 'The shared module (DGO.central) already reads; each app has to wire it (RiseONE: conteudo-central.js adapter). Other apps join as they are updated.')),
+    F('recursos.gradual', 'recursos', 'especificar', 2, N('Liberação gradual (por plano, por % de pessoas, por app instalado)', 'Gradual rollout (by plan, by % of people, by installed app)'),
+      N('Decidir se um recurso pode valer só para Premium, para uma porcentagem, ou só para quem instalou o app.', 'Decide whether a feature can apply only to Premium, to a percentage, or only to those who installed the app.')),
     F('servicos.limites', 'servicos', 'especificar', 2, N('Limites por plano (ex.: 10 leituras de OCR por dia)', 'Limits per plan (e.g. 10 OCR reads a day)'),
       N('Quais serviços têm limite e de quanto, por plano.', 'Which services have a limit and how much, per plan.')),
     F('servicos.importar', 'servicos', 'ativo', 1, N('Importar o servicos.json de um app', 'Import an app\'s servicos.json')),
@@ -724,6 +738,41 @@
     email: N('Enviar e-mail (modelo → caixa de saída)', 'Send e-mail (template → outbox)')
   };
 
+
+  /* ------------------------------------------------------------------
+     7. RECURSOS, COMPORTAMENTOS E CONTEÚDO POR APP (sementes)
+     app '*' = Global (vale em todos). O app lê e ignora o que não conhece;
+     o padrão fica no código do app. Aqui só o que o dono pode querer mexer.
+     ------------------------------------------------------------------ */
+  function R(app, id, pt, en, ligado, dpt, den) { return { app: app, id: id, nome: N(pt, en), descricao: N(dpt || '', den || ''), ligado: ligado !== false, desde: '', nota: '' }; }
+  var RECURSOS_INICIAIS = [
+    R('*', 'assistone', 'AssistONE (assistente)', 'AssistONE (assistant)', true, 'Personagem de ajuda no canto de baixo.', 'Help character in the bottom corner.'),
+    R('*', 'anuncios', 'Anúncios (faixa e pop-up)', 'Ads (strip and pop-up)', true, 'Some para Premium de qualquer jeito.', 'Hidden for Premium anyway.'),
+    R('*', 'ia', 'Perguntar à IA', 'Ask the AI', true, 'Chat e recursos que usam a chave da pessoa.', 'Chat and features that use the person\'s key.'),
+    R('*', 'voz', 'Leitura em voz alta', 'Read aloud', true),
+    R('*', 'ocr', 'Ler texto de foto (OCR)', 'Read text from photo (OCR)', true),
+    R('*', 'offline', 'Usar sem internet e atalho na tela inicial', 'Use offline and home-screen shortcut', true),
+    R('*', 'telemetria', 'Estatísticas de uso (com consentimento)', 'Usage statistics (with consent)', false, 'Fica desligado até a ferramenta ser escolhida.', 'Stays off until the tool is chosen.'),
+    R('rise-one', 'videos-youtube', 'Vídeos do YouTube na ficha do aparelho', 'YouTube videos on the equipment sheet', true, 'Mostra os vídeos cadastrados em Conteúdo → Equipamentos.', 'Shows the videos entered in Content → Equipment.'),
+    R('rise-one', 'fotos-centrais', 'Fotos dos aparelhos vindas do RootifyONE', 'Equipment photos from RootifyONE', true, 'Além do desenho, as fotos enviadas aqui.', 'Besides the drawing, the photos uploaded here.'),
+    R('rise-one', 'espelho', 'Espelho com câmera (postura)', 'Camera mirror (posture)', true),
+    R('rise-one', 'modo-tv', 'Modo TV', 'TV mode', true),
+    R('omnilife-one', 'vigilante', 'Modo Vigilante (câmera)', 'Watch mode (camera)', false, 'Em construção.', 'Under construction.'),
+    R('moneytrio', 'open-finance', 'Open Finance', 'Open Finance', false, 'Pesquisar antes de ligar.', 'Research before turning on.'),
+    R('contador-de-historias', 'criar-com-ia', 'Criar história com IA', 'Create a story with AI', true)
+  ];
+  function CP(app, id, pt, en, tipo, padrao, opcoes, dpt, den) { return { app: app, id: id, nome: N(pt, en), descricao: N(dpt || '', den || ''), tipo: tipo, opcoes: opcoes || [], valor: padrao, padrao: padrao }; }
+  var COMPORTAMENTOS_INICIAIS = [
+    CP('*', 'assistone.dicas', 'Dicas por tela do AssistONE', 'AssistONE per-screen tips', 'sim-nao', true),
+    CP('*', 'contato.email', 'E-mail de contato mostrado nos apps', 'Contact e-mail shown in the apps', 'texto', 'contato@solverone.com.br'),
+    CP('*', 'suporte.email', 'E-mail de suporte mostrado nos apps', 'Support e-mail shown in the apps', 'texto', 'suporte@solverone.com.br'),
+    CP('rise-one', 'descanso.padraoSeg', 'Descanso padrão entre séries (segundos)', 'Default rest between sets (seconds)', 'numero', 60),
+    CP('rise-one', 'videos.maxPorAparelho', 'Vídeos mostrados por aparelho', 'Videos shown per equipment', 'numero', 3),
+    CP('moneytrio', 'moeda.padrao', 'Moeda padrão', 'Default currency', 'lista', 'BRL', ['BRL', 'USD', 'EUR'])
+  ];
+  /* coleções genéricas iniciais: nenhuma. Os aparelhos do RiseONE têm editor próprio (rootify-conteudo.js). */
+  var CONTEUDO_INICIAL = [];
+
   RF.cat = {
     GRUPOS: GRUPOS, MODULOS: MODULOS, ACOES_RAPIDAS: ACOES_RAPIDAS, DOMINIO: DOMINIO, ACOES: ACOES, RECURSOS: RECURSOS, BASICAS: BASICAS,
     PAPEIS: PAPEIS, SEPARACAO: SEPARACAO, PERFIS: PERFIS, FUNCOES: FUNCOES,
@@ -732,6 +781,7 @@
     CANAIS: CANAIS, RESPOSTAS_PRONTAS: RESPOSTAS_PRONTAS, TIPOS_PEDIDO_LGPD: TIPOS_PEDIDO_LGPD,
     ROPA_INICIAL: ROPA_INICIAL, BASES_LEGAIS: BASES_LEGAIS,
     GATILHOS: GATILHOS, CAMPOS_CONDICAO: CAMPOS_CONDICAO, ACOES_AUTOMACAO: ACOES_AUTOMACAO,
+    RECURSOS_INICIAIS: RECURSOS_INICIAIS, COMPORTAMENTOS_INICIAIS: COMPORTAMENTOS_INICIAIS, CONTEUDO_INICIAL: CONTEUDO_INICIAL,
     funcao: function (id) { return FUNCOES.filter(function (f) { return f.id === id; })[0] || null; },
     modulo: function (id) { return MODULOS.filter(function (m) { return m.id === id; })[0] || null; }
   };

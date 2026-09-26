@@ -17,7 +17,7 @@
   var RF = raiz.RF = raiz.RF || {};
   var d = document;
   var PREFIXO = 'rootify:v1:';
-  var VERSAO = '0.2.6';
+  var VERSAO = '0.3.0';
   RF.VERSAO = VERSAO;
   RF.telas = RF.telas || {};
   RF.h = RF.h || {};
@@ -302,9 +302,7 @@
      acesso — nome, papel e as DEKs embrulhadas. Nenhuma senha.
      Coleções (dentro do cofre, cifradas): todo o resto.
      ------------------------------------------------------------------ */
-  var COLECOES = ['apps', 'planos', 'servicos', 'usuarios', 'segmentos', 'chamados', 'kb', 'termos', 'recados',
-    'anuncios', 'versoes', 'papeis', 'automacoes', 'custos', 'pedidos', 'ropa', 'incidentes', 'consentimentos',
-    'log', 'config', 'publicacoes', 'respostas', 'emails', 'modelosEmail', 'avisos'];
+  var COLECOES = ['apps', 'planos', 'servicos', 'usuarios', 'segmentos', 'chamados', 'kb', 'termos', 'recados', 'anuncios', 'versoes', 'papeis', 'automacoes', 'custos', 'pedidos', 'ropa', 'incidentes', 'consentimentos', 'log', 'config', 'publicacoes', 'respostas', 'emails', 'modelosEmail', 'avisos', 'recursos', 'comportamentos', 'conteudo', 'colecoes'];
 
   var Cofre = {
     dek: null,          /* CryptoKey — só em memória, some ao bloquear */
@@ -1086,6 +1084,21 @@
 
   var GitHub = {
     b64utf8: function (s) { return b64(new TextEncoder().encode(s)); },
+    /* um arquivo binario (foto) ja em base64: cria ou substitui no repositorio */
+    enviarArquivo: function (cfg, caminho, base64, mensagem) {
+      var url = 'https://api.github.com/repos/' + encodeURIComponent(cfg.dono) + '/' + encodeURIComponent(cfg.repo) + '/contents/' + caminho.split('/').map(encodeURIComponent).join('/');
+      var cab = { 'Authorization': 'Bearer ' + cfg.token, 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28', 'Content-Type': 'application/json' };
+      return fetch(url + '?ref=' + encodeURIComponent(cfg.ramo || 'main'), { headers: cab }).then(function (r) { return r.status === 404 ? null : r.ok ? r.json() : null; }).then(function (atual) {
+        var corpo = { message: mensagem || ('RootifyONE: ' + caminho), content: base64, branch: cfg.ramo || 'main' };
+        if (atual && atual.sha) corpo.sha = atual.sha;
+        return fetch(url, { method: 'PUT', headers: cab, body: JSON.stringify(corpo) });
+      }).then(function (r) {
+        if (r.status === 401 || r.status === 403) throw new Error('token');
+        if (r.status === 404) throw new Error('repo');
+        if (!r.ok) throw new Error('github-' + r.status);
+        return r.json();
+      });
+    },
     publicar: function (cfg, arquivos, mensagem, aoProgresso) {
       var base = 'https://api.github.com/repos/' + encodeURIComponent(cfg.dono) + '/' + encodeURIComponent(cfg.repo) + '/contents/';
       var cab = { 'Authorization': 'Bearer ' + cfg.token, 'Accept': 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
