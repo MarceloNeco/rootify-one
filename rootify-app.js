@@ -905,6 +905,11 @@
       return;
     }
     RF.on('rota', renderizar);
+    d.addEventListener('dgo:ia-modelo', function (e) {
+      var x = e.detail || {};
+      ui.aviso('✨ ' + T('O provedor aposentou o modelo ', 'The provider retired the model ') + x.de + T('; troquei para ', '; switched to ') + x.para + '.', 'info');
+      if (C.aberto()) RF.Log.registrar('integracoes', 'ia-modelo', x.provedor, x.de, x.para, T('Modelo de IA trocado sozinho: ', 'AI model switched automatically: ') + x.de + ' → ' + x.para);
+    });
     RF.on('log', function () { if (S.pessoa) atualizarBolha(); });
     RF.on('bloqueado', function () { U.limpar(main); telaEntrar(T('Tela bloqueada por inatividade ou a pedido. Entre de novo.', 'Screen locked for inactivity or on request. Sign in again.')); });
     RF.on('saiu', function () { U.limpar(main); telaEntrar(); });
