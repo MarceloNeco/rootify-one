@@ -241,7 +241,7 @@
     area.appendChild(el('div', { class: 'rf-grade-2' }, [ui.cinza('anuncios.metricas'), ui.cinza('anuncios.externos')]));
   };
   function editarAnuncio(a) {
-    var novo = !a, x = a ? U.clonar(a) : { id: '', nome: '', cor: '#60a5fa', glifo: '✨', link: 'https://marceloneco.github.io/', frase: {}, ativo: true };
+    var novo = !a, x = a ? U.clonar(a) : { id: '', nome: '', cor: '#60a5fa', glifo: '✨', link: RF.cat.DOMINIO.atual, frase: {}, ativo: true };
     var podeEd = RF.pode(novo ? 'anuncios:criar' : 'anuncios:editar');
     var id = ui.entrada(x.id, { attrs: { disabled: !novo } }), nome = ui.entrada(x.nome), cor = ui.entrada(x.cor, { tipo: 'color' }), glifo = ui.entrada(x.glifo);
     var link = ui.entrada(x.link, { tipo: 'url' }), img = ui.entrada(x.imagem || '', { tipo: 'url', attrs: { placeholder: T('opcional', 'optional') } });
@@ -602,7 +602,7 @@
       { id: 'ult', nome: T('Último acesso', 'Last access'), ordenar: function (p) { return p.ultimoAcesso || ''; }, desenhar: function (p) { return p.ultimoAcesso ? U.data(p.ultimoAcesso, true) : '—'; } },
       { id: 'at', nome: T('Situação', 'Status'), desenhar: function (p) { return ui.selo(p.ativo ? (p.trocarSenha ? T('1º acesso pendente', 'first access pending') : T('ativa', 'active')) : T('desativada', 'disabled'), p.ativo ? (p.trocarSenha ? 'atencao' : 'ok') : 'cinza'); } }
     ], C.equipe(), { aoClicar: RF.pode('equipe:editar') ? function (p) { editarPessoa(p); } : null }));
-    area.appendChild(el('div', { class: 'rf-grade-2' }, [ui.cinza('equipe.remota'), ui.cinza('equipe.convite')]));
+    area.appendChild(el('div', { class: 'rf-grade-2' }, [ui.cinza('equipe.convite'), ui.cinza('equipe.remota')]));
   };
   function donosAtivos() { return C.equipe().filter(function (p) { return p.ativo && p.papel === 'super-admin'; }); }
   function editarPessoa(p) {
@@ -665,10 +665,22 @@
     ui.modal(novo ? T('Nova pessoa na equipe', 'New team member') : x.nome, corpo, { largo: true, rodape: rod });
   }
   function mostrarProvisoria(p, temp) {
+    var comSenha = ui.marca(T('Incluir a senha provisória no e-mail (menos seguro; prefira entregar por outro canal)', 'Include the temporary password in the e-mail (less secure; prefer handing it over another channel)'), false);
+    var papel = RF.Papeis.achar(p.papel);
     ui.modal(T('Senha provisória', 'Temporary password'), el('div', { class: 'rf-form' }, [
       el('p', { texto: T('Entregue pessoalmente a ', 'Hand it in person to ') + p.nome + T('. No primeiro acesso, neste aparelho, ela troca pela própria senha e recebe o código de recuperação dela.', '. At first access, on this device, they swap it for their own password and get their own recovery code.') }),
       el('div', { class: 'rf-codigo', texto: temp }),
-      ui.botao(T('Copiar', 'Copy'), function () { U.copiar(temp).then(function () { ui.aviso(T('Copiado.', 'Copied.')); }); }),
+      el('div', { class: 'rf-acoes' }, [
+        ui.botao(T('Copiar', 'Copy'), function () { U.copiar(temp).then(function () { ui.aviso(T('Copiado.', 'Copied.')); }); }),
+        RF.Email && RF.pode('emails:criar') ? ui.botao('✉️ ' + T('Enviar convite por e-mail', 'Send invitation by e-mail'), function () {
+          RF.Email.enfileirar({ modelo: 'convite-equipe', para: p.email, nome: p.nome, idioma: U.idioma(), app: 'rootify-one',
+            dados: { papel: papel ? T(papel.nome) : p.papel, link: U.siteBase() + 'rootify-one/', senha: comSenha.querySelector('input').checked ? T('Senha provisória: ', 'Temporary password: ') + temp : '' },
+            origem: { tipo: 'equipe', rotulo: T('Convite: ', 'Invitation: ') + p.nome, ir: ['equipe'] } })
+            .then(function (item) { ui.fecharModal(); setTimeout(function () { RF.telasEmail.abrirItem(item); }, 80); })
+            .catch(function (e) { ui.aviso(String(e.message), 'erro'); });
+        }) : null
+      ]),
+      RF.Email ? comSenha : null,
       el('p', { class: 'rf-dica', texto: T('Esta senha não aparece de novo.', 'This password is not shown again.') })
     ]), { aoFechar: RF.renderizar });
   }
@@ -757,7 +769,15 @@
         var p = D.Privacidade.criarPedido({ tipo: tipo.value, usuario: tit.value || null, contato: tit.value ? null : { nome: cNome.value.trim(), email: cEmail.value.trim() }, app: app.value,
           detalhe: det.value.trim(), recebidoEm: new Date(rec.value + 'T12:00:00').toISOString() });
         D.Automacoes.rodar('pedido-lgpd-criado', p, null);
-        RF.mudar('pedidos', 'privacidade', 'criar', p.id, null, { numero: p.numero, tipo: p.tipo }, T('Pedido de privacidade registrado: ', 'Privacy request logged: ') + p.numero).then(function () { ui.fecharEIr('privacidade'); });
+        RF.mudar('pedidos', 'privacidade', 'criar', p.id, null, { numero: p.numero, tipo: p.tipo }, T('Pedido de privacidade registrado: ', 'Privacy request logged: ') + p.numero).then(function () {
+          /* LGPD: confirmar o recebimento e o prazo — o e-mail nasce na caixa de saída */
+          var u = p.usuario && H.usuario(p.usuario), email = u ? u.email : (p.contato && p.contato.email);
+          if (RF.Email && email && RF.pode('emails:criar')) {
+            RF.Email.enfileirar({ modelo: 'lgpd-recebido', para: email, nome: (u ? u.nome : p.contato.nome) || '', idioma: u && u.idioma === 'en' ? 'en' : 'pt', app: p.app,
+              dados: { numero: p.numero, prazo: U.data(p.prazo) }, origem: { tipo: 'lgpd', rotulo: p.numero, ir: ['privacidade'] } }).catch(function () {});
+          }
+          ui.fecharEIr('privacidade');
+        });
       }, 'pri')] });
   }
   RF.h.novoPedido = novoPedido;
@@ -777,7 +797,15 @@
       p.status = st.value; p.resposta = resp.value.trim();
       p.historico = (p.historico || []).concat([{ quando: U.agora(), quem: S.pessoa.email, texto: antes + ' → ' + p.status }]);
       if (p.status === 'respondido' || p.status === 'negado') p.encerradoEm = U.agora();
-      RF.mudar('pedidos', 'privacidade', 'editar', p.id, antes, p.status, p.numero + ': ' + antes + ' → ' + p.status).then(function () { ui.fecharModal(); RF.renderizar(); });
+      RF.mudar('pedidos', 'privacidade', 'editar', p.id, antes, p.status, p.numero + ': ' + antes + ' → ' + p.status).then(function () {
+        var email = u ? u.email : (p.contato && p.contato.email);
+        if ((p.status === 'respondido' || p.status === 'negado') && antes !== p.status && RF.Email && email && RF.pode('emails:criar')) {
+          return RF.Email.enfileirar({ modelo: 'lgpd-concluido', para: email, nome: (u ? u.nome : p.contato.nome) || '', idioma: u && u.idioma === 'en' ? 'en' : 'pt', app: p.app,
+            dados: { numero: p.numero, resposta: p.resposta }, origem: { tipo: 'lgpd', rotulo: p.numero, ir: ['privacidade'] } })
+            .then(function (item) { ui.fecharModal(); setTimeout(function () { RF.telasEmail.abrirItem(item); }, 80); }).catch(function () { ui.fecharModal(); RF.renderizar(); });
+        }
+        ui.fecharModal(); RF.renderizar();
+      });
     }, 'pri')] : [] });
   }
   function editarRopa(r) {
@@ -894,10 +922,11 @@
   /* ------------------------------------------------------------------
      INTEGRAÇÕES E CHAVES
      ------------------------------------------------------------------ */
-  RF.telas.integracoes = function (area) {
+  RF.telas.integracoes = function (area, rota) {
     var podeEd = RF.pode('integracoes:editar');
     var cfg = C.obj('config'); cfg.github = cfg.github || {};
     RF.pagina(area, 'integracoes', T('Chaves e tokens ficam cifrados dentro do cofre deste aparelho. Nunca vão para o código nem para os arquivos publicados.', 'Keys and tokens stay encrypted inside this device\'s vault. They never go into the code or the published files.'));
+    if (rota && rota.sub === 'dominio') { secaoDominio(area); }
     /* chaves de IA: o cofre e o guia sao do modulo comum (os apps herdam o mesmo) */
     if (raiz.DGO && raiz.DGO.ia && raiz.DGO.ia.capacidades) {
       if (!RF._ouveChavesIA) {   /* quando o cofre muda, a lista aqui acompanha */
@@ -978,11 +1007,61 @@
       raiz.DGO && raiz.DGO.ia ? ui.botao(T('Abrir o cofre de chaves deste aparelho (para a IA do RootifyONE)', 'Open this device\'s key vault (for RootifyONE\'s AI)'), function () { raiz.DGO.ia.chaves(); }) : null
     ]));
 
+    if (!(rota && rota.sub === 'dominio')) secaoDominio(area);
     area.appendChild(el('div', { class: 'rf-grade-2' }, [
       ui.cinza('integracoes.firebase', el('div', { class: 'rf-grade-2' }, [ui.campo('projectId', ui.entrada('', { attrs: { disabled: true } })), ui.campo('apiKey (web)', ui.entrada('', { attrs: { disabled: true } }))])),
-      ui.cinza('integracoes.email'), ui.cinza('integracoes.pagamento'), ui.cinza('integracoes.mensageria'), ui.cinza('integracoes.analytics')
+      ui.cinza('integracoes.pagamento'), ui.cinza('integracoes.mensageria'), ui.cinza('integracoes.analytics')
     ]));
   };
+  /* Domínio solverone.com.br: um domínio, apps em pastas (mesma origem para todos).
+     Os registros abaixo são os do GitHub Pages; o TXT de verificação vem da conta GitHub. */
+  var estadoDominio = {};
+  function secaoDominio(area) {
+    var dom = RF.cat.DOMINIO, host = dom.atual.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    var cfg = C.obj('config'); cfg.dominio = cfg.dominio || {};
+    var podeEd = RF.pode('integracoes:editar');
+    var regs = [
+      { id: 'a', tipo: 'A', nome: '@', valor: '185.199.108.153 · 185.199.109.153 · 185.199.110.153 · 185.199.111.153', copia: '185.199.108.153\n185.199.109.153\n185.199.110.153\n185.199.111.153' },
+      { id: 'aaaa', tipo: 'AAAA', nome: '@', valor: '2606:50c0:8000::153 · 2606:50c0:8001::153 · 2606:50c0:8002::153 · 2606:50c0:8003::153', copia: '2606:50c0:8000::153\n2606:50c0:8001::153\n2606:50c0:8002::153\n2606:50c0:8003::153' },
+      { id: 'cname', tipo: 'CNAME', nome: 'www', valor: 'marceloneco.github.io.', copia: 'marceloneco.github.io.' },
+      { id: 'txt', tipo: 'TXT', nome: '_github-pages-challenge-marceloneco', valor: T('(código dado pelo GitHub em Settings → Pages → Add a domain)', '(code given by GitHub in Settings → Pages → Add a domain)'), copia: '' },
+      { id: 'https', tipo: T('GitHub Pages', 'GitHub Pages'), nome: 'Enforce HTTPS', valor: T('ligado no repositório marceloneco.github.io (o domínio é configurado UMA vez, no Portal; os outros repositórios herdam)', 'on in the marceloneco.github.io repository (the domain is set ONCE, in the Portal; the other repositories inherit it)'), copia: '' },
+      { id: 'firebase', tipo: 'Firebase', nome: T('Domínios autorizados', 'Authorized domains'), valor: host + ' · www.' + host + T(' (Authentication → Settings; senão o login Google falha)', ' (Authentication → Settings; otherwise Google sign-in fails)'), copia: host + '\nwww.' + host }
+    ];
+    var feitos = regs.filter(function (r) { return cfg.dominio[r.id]; }).length;
+    var lista = el('ul', { class: 'rf-dns' }, regs.map(function (r) {
+      var mk = el('input', { type: 'checkbox', 'aria-label': T('Feito: ', 'Done: ') + r.tipo + ' ' + r.nome, disabled: !podeEd }); mk.checked = !!cfg.dominio[r.id];
+      mk.onchange = function () { cfg.dominio[r.id] = mk.checked; RF.mudar('config', 'integracoes', 'dominio', r.id, !mk.checked, mk.checked, T('Domínio: ', 'Domain: ') + r.tipo + ' ' + r.nome + (mk.checked ? ' ✓' : ' ✗')).then(RF.renderizar); };
+      return el('li', { class: 'rf-dns-item' + (cfg.dominio[r.id] ? ' rf-feito' : '') }, [
+        el('label', { class: 'rf-marca' }, [mk, el('span', {}, [el('strong', { texto: r.tipo + ' · ' + r.nome })])]),
+        el('div', { class: 'rf-dns-valor' }, [el('code', { texto: r.valor }), r.copia ? ui.botao(T('Copiar', 'Copy'), function () { U.copiar(r.copia).then(function () { ui.aviso(T('Copiado.', 'Copied.')); }); }, 'p') : null])
+      ]);
+    }));
+    var teste = el('div', { class: 'rf-chips', 'aria-live': 'polite' });
+    function desenharTeste() {
+      U.limpar(teste);
+      [dom.atual, dom.atual + dom.dados + '/apps.json', dom.antigo].forEach(function (u) {
+        var s = estadoDominio[u];
+        teste.appendChild(ui.selo(u.replace('https://', '') + ' · ' + (!s ? T('não testado', 'not tested') : s.ok ? T('responde', 'answers') : s.cors ? T('sem resposta daqui', 'no answer from here') : T('erro ', 'error ') + s.status), !s ? 'neutro' : s.ok ? 'ok' : s.cors ? 'cinza' : 'erro'));
+      });
+    }
+    desenharTeste();
+    var sec = ui.secao('🌐 ' + T('Domínio ', 'Domain ') + host + ' · ' + feitos + '/' + regs.length, [
+      el('p', { class: 'rf-dica', texto: T('Um domínio, apps em pastas (' + host + '/omnilife-one, /rise-one…): todos continuam na mesma origem, então cofre de IA, perfil e login valem para todos. O DNS é feito no Registro.br (modo avançado). Marque cada passo feito.',
+        'One domain, apps in folders (' + host + '/omnilife-one, /rise-one…): all stay on the same origin, so the AI vault, profile and sign-in are shared. DNS is done at Registro.br (advanced mode). Tick each step done.') }),
+      lista,
+      el('div', { class: 'rf-acoes' }, [ui.botao(T('Testar se os endereços respondem', 'Test whether the addresses answer'), function () {
+        var urls = [dom.atual, dom.atual + dom.dados + '/apps.json', dom.antigo];
+        Promise.all(urls.map(function (u) {
+          return fetch(u, { method: 'HEAD', cache: 'no-store' }).then(function (r) { estadoDominio[u] = { ok: r.ok, status: r.status }; }).catch(function () { estadoDominio[u] = { ok: false, cors: true }; });
+        })).then(function () { desenharTeste(); RF.Log.registrar('integracoes', 'dominio-teste', host, null, estadoDominio, T('Teste dos endereços do domínio', 'Domain address test')); });
+      }), teste]),
+      el('p', { class: 'rf-dica', texto: T('Mudar de endereço = mudar de origem: o que fica no navegador (cofre, digital, app instalado) não passa sozinho. No endereço antigo, faça a cópia de segurança; no novo, restaure e registre a digital de novo.', 'Changing address = changing origin: what lives in the browser (vault, fingerprint, installed app) does not move on its own. At the old address make a backup; at the new one restore it and register the fingerprint again.') }),
+      ui.cinza('integracoes.dominio')
+    ]);
+    sec.id = 'rf-dominio';
+    area.appendChild(sec);
+  }
 
   /* ------------------------------------------------------------------
      AUTOMAÇÕES
@@ -1002,7 +1081,7 @@
         return c;
       } }
     ], C.lista('automacoes'), { aoClicar: RF.pode('automacoes:editar') ? editarRegra : null, vazio: T('Nenhuma regra ainda.', 'No rules yet.') }));
-    area.appendChild(el('div', { class: 'rf-grade-2' }, [ui.cinza('automacoes.agendadas'), ui.cinza('automacoes.email')]));
+    area.appendChild(el('div', { class: 'rf-grade-2' }, [ui.cinza('automacoes.email'), ui.cinza('automacoes.agendadas')]));
   };
   function editarRegra(r) {
     var novo = !r, x = r ? U.clonar(r) : { id: U.uid('a-'), nome: {}, ativo: true, gatilho: 'chamado-criado', condicoes: [{ campo: 'categoria', valor: '' }], acoes: [{ tipo: 'etiqueta', valor: '' }], execucoes: 0 };
@@ -1019,7 +1098,7 @@
     function valorAcao(a) {
       if (a.tipo === 'prioridade') return ui.escolha(Object.keys(RF.cat.PRIORIDADES).map(function (k) { return [k, T(RF.cat.PRIORIDADES[k])]; }), a.valor);
       if (a.tipo === 'atribuir') return ui.escolha(H.opcoesEquipe(), a.valor);
-      if (a.tipo === 'email-futuro') return ui.entrada('', { attrs: { disabled: true, placeholder: T('futuro', 'future') } });
+      if (a.tipo === 'email') return ui.escolha(RF.Email ? RF.Email.modelos().filter(function (m) { return m.ativo !== false; }).map(function (m) { return [m.id, T(m.nome)]; }) : [], a.valor || 'chamado-recebido');
       return ui.entrada(a.valor, { attrs: { placeholder: a.tipo === 'avisar' ? T('texto do aviso', 'alert text') : '' } });
     }
     function desenhar() {
@@ -1039,6 +1118,7 @@
         val.onchange = val.oninput = function () { a.valor = val.value; };
         if (a.tipo === 'prioridade' && !a.valor) a.valor = val.value;
         if (a.tipo === 'atribuir' && !a.valor) a.valor = val.value;
+        if (a.tipo === 'email' && !a.valor) a.valor = val.value;
         acaoBox.appendChild(el('div', { class: 'rf-linha' }, [tipo, val, ui.botao('✕', function () { x.acoes.splice(i, 1); desenhar(); }, 'p', { 'aria-label': T('Tirar ação', 'Remove action') })]));
       });
       acaoBox.appendChild(ui.botao('+ ' + T('ação', 'action'), function () { x.acoes.push({ tipo: 'etiqueta', valor: '' }); desenhar(); }, 'p'));
@@ -1052,7 +1132,6 @@
     rod.push(ui.botao(T('Salvar', 'Save'), function () {
       x.nome = nome.valor(); x.gatilho = gat.value;
       if (!x.nome.pt || !x.nome.en) return ui.aviso(T('Nome em PT e EN.', 'Name in PT and EN.'), 'erro');
-      if (x.acoes.some(function (a) { return a.tipo === 'email-futuro'; })) return ui.aviso(T('"Enviar e-mail" ainda não existe; tire essa ação.', '"Send e-mail" does not exist yet; remove that action.'), 'erro');
       if (!x.acoes.length) return ui.aviso(T('Pelo menos uma ação.', 'At least one action.'), 'erro');
       if (novo) C.lista('automacoes').push(x); else C.db.automacoes = C.lista('automacoes').map(function (y) { return y.id === x.id ? x : y; });
       RF.mudar('automacoes', 'automacoes', novo ? 'criar' : 'editar', x.id, r, x, T('Regra salva: ', 'Rule saved: ') + x.nome.pt).then(function () { ui.fecharModal(); RF.renderizar(); });
@@ -1222,7 +1301,7 @@
   RF.telas.configuracoes = function (area, rota) {
     var aba = rota.sub || 'geral';
     RF.pagina(area, 'configuracoes', null);
-    area.appendChild(ui.abas([{ id: 'geral', nome: T('Geral', 'General') }, { id: 'seguranca', nome: T('Minha segurança', 'My security') }, { id: 'barra', nome: T('Barra de baixo', 'Bottom bar') },
+    area.appendChild(ui.abas([{ id: 'geral', nome: T('Geral', 'General') }, { id: 'seguranca', nome: T('Minha segurança', 'My security') }, { id: 'barra', nome: T('Barra de atalhos', 'Shortcut bar') },
       { id: 'backup', nome: T('Cópia de segurança', 'Backup') }, { id: 'exemplo', nome: T('Dados de exemplo', 'Sample data') }, { id: 'sobre', nome: T('Sobre', 'About') }], aba, function (a) { RF.Rota.ir('configuracoes', a); }));
     var cfg = C.obj('config'), podeEd = RF.pode('configuracoes:editar');
     if (aba === 'geral') {
@@ -1232,6 +1311,8 @@
       var bloq = ui.escolha([[5, '5 min'], [10, '10 min'], [15, '15 min'], [30, '30 min'], [60, '60 min']], cfg.bloqueioMin || 15, { disabled: !podeEd });
       bloq.onchange = function () { var a = cfg.bloqueioMin; cfg.bloqueioMin = +bloq.value; RF.mudar('config', 'configuracoes', 'bloqueio', '', a, cfg.bloqueioMin, T('Bloqueio automático: ', 'Auto-lock: ') + cfg.bloqueioMin + ' min').then(function () { S.vigiar(); ui.aviso(T('Salvo.', 'Saved.')); }); };
       area.appendChild(ui.secao(T('Idioma', 'Language'), [idi, el('p', { class: 'rf-dica', texto: T('Datas: PT 17/Set/2026 · EN Sep/17/2026.', 'Dates: PT 17/Set/2026 · EN Sep/17/2026.') })]));
+      area.appendChild(secaoAparencia());
+      if (RF.Assist) area.appendChild(RF.Assist.cartaoConfig());
       area.appendChild(ui.secao(T('Bloqueio automático', 'Auto-lock'), [ui.campo(T('Bloquear a tela depois de parado por', 'Lock the screen after being idle for'), bloq),
         el('p', { class: 'rf-dica', texto: T('Recarregar a página (F5) não pede para entrar de novo enquanto este prazo não passar. Ao bloquear, sair ou fechar a aba, a chave some e os dados só abrem de novo com digital, PIN ou senha.', 'Reloading the page (F5) does not ask you to sign in again while this time has not passed. On lock, sign-out or closing the tab, the key is gone and data only opens again with fingerprint, PIN or password.') })]));
       if (raiz.DGO) area.appendChild(ui.secao(T('Módulo comum da SolverONE', 'SolverONE shared module'), [
@@ -1281,20 +1362,7 @@
       var tent = C.lista('log').filter(function (e) { return e.modulo === 'seguranca' && (e.alvo === p.email || e.quem === p.email); }).slice(-10).reverse();
       area.appendChild(ui.secao(T('Acessos recentes', 'Recent access'), [el('ul', {}, tent.map(function (e) { return el('li', { texto: U.data(e.quando, true) + ' · ' + e.resumo }); }))]));
     }
-    if (aba === 'barra') {
-      var fav = (cfg.favoritos && cfg.favoritos.length) ? cfg.favoritos.slice() : ['painel', 'usuarios', 'suporte', 'publicar'];
-      var caixa = el('div', { class: 'rf-marcas' });
-      RF.cat.MODULOS.filter(function (m) { return RF.pode(m.recurso + ':ver'); }).forEach(function (m) {
-        var mk = ui.marca(m.icone + ' ' + T(m.nome), fav.indexOf(m.id) !== -1, { value: m.id });
-        mk.querySelector('input').onchange = function (e) {
-          var sel = Array.prototype.filter.call(caixa.querySelectorAll('input'), function (i) { return i.checked; }).map(function (i) { return i.value; });
-          if (sel.length > 5) { e.target.checked = false; return ui.aviso(T('No máximo 5.', 'At most 5.'), 'erro'); }
-          cfg.favoritos = sel; C.salvar('config').then(function () { RF.renderizar(); });
-        };
-        caixa.appendChild(mk);
-      });
-      area.appendChild(ui.secao(T('Atalhos da barra de baixo (celular) — até 5', 'Bottom bar shortcuts (phone) — up to 5'), [caixa, el('p', { class: 'rf-dica', texto: T('O resto fica no ☰ do topo.', 'Everything else is in the ☰ at the top.') })]));
-    }
+    if (aba === 'barra') area.appendChild(montadorBarra(cfg, podeEd));
     if (aba === 'backup') {
       area.appendChild(ui.secao(T('Fazer cópia de segurança', 'Make a backup'), [
         el('p', { texto: T('O arquivo sai cifrado: só abre com a senha ou o código de recuperação de alguém da equipe. A digital não vai junto (é presa a este aparelho).', 'The file is encrypted: it only opens with a team member\'s password or recovery code. The fingerprint does not go along (it is tied to this device).') }),
@@ -1351,8 +1419,144 @@
         el('p', {}, [T('Módulo comum: ', 'Shared module: '), raiz.DGO ? 'diretrizes.js ' + raiz.DGO.versao : T('não carregado', 'not loaded')]),
         H.barras(T('Registros guardados', 'Stored records'), cont),
         novidadesPorDia(),
-        el('p', {}, [el('a', { href: 'https://marceloneco.github.io/', target: '_blank', rel: 'noopener', texto: T('Portal de Projetos ↗', 'Projects Portal ↗') })])
+        el('p', {}, [el('a', { href: U.siteBase(), target: '_blank', rel: 'noopener', texto: T('Portal SolverONE ↗', 'SolverONE Portal ↗') })])
       ]));
     }
   };
+
+  /* ---- Aparência: tema, tamanho do texto e movimento (por aparelho) ---- */
+  function secaoAparencia() {
+    var A = RF.Aparencia, a = A.ler();
+    function grupo(rotulo, opcoes, atual, aoEscolher) {
+      return ui.campo(rotulo, el('div', { class: 'rf-seg rf-seg-larga', role: 'group', 'aria-label': rotulo }, opcoes.map(function (o) {
+        var b = el('button', { type: 'button', class: atual === o[0] ? 'rf-on' : '', 'aria-pressed': atual === o[0] ? 'true' : 'false', texto: o[1] });
+        b.onclick = function () { aoEscolher(o[0]); RF.renderizar(); };
+        return b;
+      })));
+    }
+    return ui.secao(T('Aparência', 'Appearance'), [
+      el('div', { class: 'rf-grade-3' }, [
+        grupo(T('Tema', 'Theme'), [['auto', T('Como o aparelho', 'Like the device')], ['claro', T('Claro', 'Light')], ['escuro', T('Escuro', 'Dark')]], a.tema || 'auto', function (v) { a.tema = v; A.gravar(a); }),
+        grupo(T('Tamanho do texto', 'Text size'), [[90, 'A−'], [100, 'A'], [115, 'A+'], [130, 'A++']], a.texto || 100, function (v) { a.texto = v; A.gravar(a); }),
+        grupo(T('Movimento', 'Motion'), [['auto', T('Como o aparelho', 'Like the device')], ['menos', T('Reduzir animações', 'Reduce animations')]], a.movimento || 'auto', function (v) { a.movimento = v; A.gravar(a); })
+      ]),
+      el('p', { class: 'rf-dica', texto: T('Vale só neste aparelho e navegador, e já antes de entrar.', 'Applies only on this device and browser, even before signing in.') })
+    ]);
+  }
+
+  /* ---- Barra de atalhos: montar arrastando (ou tocando), até 5, salva sozinha ---- */
+  function montadorBarra(cfg, podeEd) {
+    var MAX = 5, padrao = RF.FAVORITOS_PADRAO;
+    var disponiveis = RF.cat.MODULOS.filter(function (m) { return !m.oculto && RF.pode(m.recurso + ':ver'); });
+    var barra = RF.favoritos().slice();
+    var caixaDisp = el('div', { class: 'rf-bar-disp', role: 'list', 'aria-label': T('Disponíveis', 'Available') });
+    var caixaBarra = el('div', { class: 'rf-bar-casas', role: 'list', 'aria-label': T('Sua barra', 'Your bar') });
+    var previa = el('div', { class: 'rf-bar-previa', 'aria-hidden': 'true' });
+    var salvo = el('span', { class: 'rf-dica rf-bar-salvo', 'aria-live': 'polite' });
+    var titulo = el('h3');
+    var desfazer = null, btDesfazer, btPadrao, selecionado = null;
+    function ehPadrao() { return barra.join(',') === padrao.filter(function (id) { return disponiveis.some(function (m) { return m.id === id; }); }).slice(0, MAX).join(','); }
+    function gravar(msg) {
+      if (!podeEd) return;
+      cfg.favoritos = barra.slice();
+      C.salvar('config').then(function () { salvo.textContent = '✓ ' + (msg || T('Salvo', 'Saved')); setTimeout(function () { salvo.textContent = ''; }, 2500); RF.renderizar(); });
+    }
+    function mover(id, para) {   /* põe/troca/reordena; devolve quem saiu */
+      var i = barra.indexOf(id), saiu = null;
+      if (i !== -1) { barra.splice(i, 1); if (para > i) para--; }
+      else if (barra.length >= MAX) { saiu = barra[Math.min(para, MAX - 1)]; barra.splice(Math.min(para, MAX - 1), 1); }
+      barra.splice(Math.min(para, barra.length), 0, id);
+      return saiu;
+    }
+    function tirar(id) { if (barra.length <= 1) { ui.aviso(T('A barra precisa de pelo menos 1 atalho.', 'The bar needs at least 1 shortcut.'), 'info'); return false; } barra.splice(barra.indexOf(id), 1); return true; }
+    function cartao(m, naBarra, pos) {
+      var c = el('div', { class: 'rf-bar-cartao' + (naBarra ? ' rf-na-barra' : '') + (selecionado === m.id ? ' rf-sel' : ''), role: 'listitem', tabindex: '0', 'data-id': m.id,
+        'aria-label': T(m.nome) + (naBarra ? T(' (na barra, posição ', ' (on the bar, position ') + (pos + 1) + ')' : '') }, [
+        el('span', { class: 'rf-bar-pega', 'aria-hidden': 'true', texto: '⠿' }), el('span', { class: 'rf-ic', 'aria-hidden': 'true', texto: m.icone }), el('span', { class: 'rf-bar-nome', texto: T(m.nome).split(' (')[0] })]);
+      if (!podeEd) return c;
+      /* alternativa sem arrastar (WCAG 2.5.7): tocar em Disponível põe; tocar na barra mostra Mover/Tirar */
+      c.onclick = function () {
+        if (!naBarra) {
+          if (barra.length >= MAX && !selecionado) { selecionado = m.id; desenhar(); return ui.aviso(T('Barra cheia: agora toque no atalho da barra que vai sair.', 'Bar full: now tap the bar shortcut that leaves.'), 'info'); }
+          if (barra.length >= MAX && selecionado && barra.indexOf(selecionado) === -1) { selecionado = m.id; desenhar(); return; }
+          var saiu = mover(m.id, barra.length); selecionado = null; desenhar(); gravar(saiu ? T('Trocou ', 'Swapped ') + T(RF.cat.modulo(saiu).nome) : null);
+        } else if (selecionado && barra.indexOf(selecionado) === -1) {
+          var idx = barra.indexOf(m.id); barra.splice(idx, 1, selecionado); var s2 = m.id; selecionado = null; desenhar(); gravar(T('Trocou ', 'Swapped ') + T(RF.cat.modulo(s2).nome));
+        } else { selecionado = selecionado === m.id ? null : m.id; desenhar(); }
+      };
+      c.onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); c.click(); } };
+      /* arrastar com dedo ou mouse (Pointer Events) */
+      c.onpointerdown = function (e) {
+        if (e.button && e.button !== 0) return;
+        var x0 = e.clientX, y0 = e.clientY, arrastando = false, fantasma = null;
+        var fim = function () {
+          d.removeEventListener('pointermove', mv); d.removeEventListener('pointerup', up); d.removeEventListener('pointercancel', up);
+          if (fantasma) fantasma.remove(); Array.prototype.forEach.call(d.querySelectorAll('.rf-bar-alvo'), function (n) { n.classList.remove('rf-bar-alvo'); });
+        };
+        var alvoEm = function (x, y) {
+          var n = d.elementFromPoint(x, y); if (!n) return null;
+          var casa = n.closest('.rf-bar-casa'); if (casa) return { tipo: 'casa', pos: +casa.getAttribute('data-pos') };
+          if (n.closest('.rf-bar-casas')) return { tipo: 'casa', pos: barra.length };
+          if (n.closest('.rf-bar-disp')) return { tipo: 'fora' };
+          return null;
+        };
+        var mv = function (ev) {
+          if (!arrastando && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 8) return;
+          if (!arrastando) { arrastando = true; fantasma = c.cloneNode(true); fantasma.className = 'rf-bar-cartao rf-bar-fantasma'; d.body.appendChild(fantasma); c.classList.add('rf-arrastando'); }
+          fantasma.style.left = (ev.clientX - 40) + 'px'; fantasma.style.top = (ev.clientY - 22) + 'px';
+          Array.prototype.forEach.call(d.querySelectorAll('.rf-bar-alvo'), function (n) { n.classList.remove('rf-bar-alvo'); });
+          var a = alvoEm(ev.clientX, ev.clientY);
+          if (a && a.tipo === 'casa') { var n = caixaBarra.querySelector('[data-pos="' + a.pos + '"]') || caixaBarra; n.classList.add('rf-bar-alvo'); }
+          if (a && a.tipo === 'fora' && naBarra) caixaDisp.classList.add('rf-bar-alvo');
+          /* rola a página perto da borda */
+          if (ev.clientY < 60) raiz.scrollBy(0, -12); else if (ev.clientY > raiz.innerHeight - 60) raiz.scrollBy(0, 12);
+        };
+        var up = function (ev) {
+          fim(); c.classList.remove('rf-arrastando');
+          if (!arrastando) return;
+          var a = alvoEm(ev.clientX, ev.clientY);
+          if (a && a.tipo === 'casa') { var saiu = mover(m.id, a.pos); selecionado = null; desenhar(); gravar(saiu ? T('Trocou ', 'Swapped ') + T(RF.cat.modulo(saiu).nome) : null); }
+          else if (a && a.tipo === 'fora' && naBarra) { if (tirar(m.id)) { desenhar(); gravar(); } }
+        };
+        d.addEventListener('pointermove', mv); d.addEventListener('pointerup', up); d.addEventListener('pointercancel', up);
+      };
+      return c;
+    }
+    function desenhar() {
+      U.limpar(caixaDisp); U.limpar(caixaBarra); U.limpar(previa);
+      titulo.textContent = T('Sua barra', 'Your bar') + ' (' + barra.length + '/' + MAX + ')';
+      disponiveis.filter(function (m) { return barra.indexOf(m.id) === -1; }).forEach(function (m) { caixaDisp.appendChild(cartao(m, false)); });
+      for (var i = 0; i < MAX; i++) {
+        var casa = el('div', { class: 'rf-bar-casa' + (barra[i] ? ' rf-cheia' : ''), 'data-pos': String(i) });
+        if (barra[i]) {
+          var m = RF.cat.modulo(barra[i]);
+          casa.appendChild(cartao(m, true, i));
+          if (selecionado === barra[i] && podeEd) casa.appendChild(el('div', { class: 'rf-bar-mover' }, [
+            i > 0 ? ui.botao('◀ ' + T('Mover', 'Move'), (function (id, pos) { return function () { mover(id, pos - 1); desenhar(); gravar(); }; })(barra[i], i), 'p') : null,
+            i < barra.length - 1 ? ui.botao(T('Mover', 'Move') + ' ▶', (function (id, pos) { return function () { mover(id, pos + 2); desenhar(); gravar(); }; })(barra[i], i), 'p') : null,
+            ui.botao('✕ ' + T('Tirar', 'Remove'), (function (id) { return function () { if (tirar(id)) { selecionado = null; desenhar(); gravar(); } }; })(barra[i]), 'p')
+          ]));
+        } else casa.appendChild(el('span', { class: 'rf-dica', texto: String(i + 1) }));
+        caixaBarra.appendChild(casa);
+      }
+      barra.forEach(function (id) { var m = RF.cat.modulo(id); previa.appendChild(el('span', { class: 'rf-bb-item' }, [el('span', { class: 'rf-ic', texto: m.icone }), el('span', { class: 'rf-bb-nome', texto: T(m.nome).split(' (')[0] })])); });
+      if (btPadrao) btPadrao.disabled = ehPadrao();
+      if (btDesfazer) btDesfazer.hidden = !desfazer;
+    }
+    btPadrao = ui.botao('↺ ' + T('Voltar ao padrão', 'Back to default'), function () {
+      desfazer = barra.slice(); barra = padrao.filter(function (id) { return disponiveis.some(function (m) { return m.id === id; }); }).slice(0, MAX); desenhar(); gravar(T('Padrão', 'Default'));
+    }, 'p');
+    btDesfazer = ui.botao(T('Desfazer', 'Undo'), function () { if (!desfazer) return; barra = desfazer.slice(); desfazer = null; desenhar(); gravar(); }, 'link');
+    desenhar();
+    return ui.secao(T('Barra de atalhos (celular) — até 5', 'Shortcut bar (phone) — up to 5'), [
+      el('p', { class: 'rf-dica', texto: T('Arraste de "Disponíveis" para uma casa (barra cheia = troca). Arraste dentro da barra para mudar a ordem, ou para fora para tirar. Sem arrastar: toque em um disponível para pôr; toque em um da barra para mover ou tirar. Salva sozinho. No computador, os mesmos atalhos ficam no ☰.',
+        'Drag from "Available" to a slot (full bar = swap). Drag within the bar to reorder, or out to remove. Without dragging: tap an available one to add; tap one on the bar to move or remove. Saves on its own. On a computer the same shortcuts live in the ☰.') }),
+      el('div', { class: 'rf-bar-montador' }, [
+        el('div', {}, [el('h3', { texto: T('Disponíveis', 'Available') }), caixaDisp]),
+        el('div', { class: 'rf-bar-seta', 'aria-hidden': 'true', texto: '→' }),
+        el('div', {}, [titulo, caixaBarra, el('div', { class: 'rf-bar-celular' }, [previa])])
+      ]),
+      el('div', { class: 'rf-acoes' }, [btPadrao, btDesfazer, salvo])
+    ]);
+  }
 })(window);

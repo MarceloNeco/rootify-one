@@ -6,8 +6,8 @@
   <title>RootifyONE</title>
   <meta name="description" content="RootifyONE — administração central da plataforma SolverONE">
   <meta name="robots" content="noindex, nofollow">
-  <!-- Segurança: só roda código deste próprio site; só conversa com GitHub e provedores de IA -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://marceloneco.github.io https://api.github.com https://openrouter.ai https://api.groq.com https://generativelanguage.googleapis.com https://api.mistral.ai https://api.openai.com https://api.anthropic.com https://api.cerebras.ai https://api.deepseek.com https://api.deepgram.com https://api.assemblyai.com https://api.elevenlabs.io; font-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'">
+  <!-- Segurança: só roda código deste próprio site; só conversa com o domínio da plataforma, GitHub, provedores de IA e o proxy de e-mail (Cloudflare Worker / Firebase Function) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; connect-src 'self' https://solverone.com.br https://*.solverone.com.br https://marceloneco.github.io https://api.github.com https://*.workers.dev https://*.cloudfunctions.net https://*.run.app https://openrouter.ai https://api.groq.com https://generativelanguage.googleapis.com https://api.mistral.ai https://api.openai.com https://api.anthropic.com https://api.cerebras.ai https://api.deepseek.com https://api.deepgram.com https://api.assemblyai.com https://api.elevenlabs.io; font-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'">
   <meta name="referrer" content="no-referrer">
   <meta name="theme-color" content="#0b1220">
   <link rel="manifest" href="manifest.json">
@@ -24,16 +24,19 @@
   <!-- o app, depois de entrar -->
   <div id="rf-casca" hidden>
     <a class="rf-pular" href="#rf-main">Pular para o conteúdo</a>
+    <!-- Cabeçalho padrão da SolverONE: ☰ + marca à esquerda; PT|EN (computador) 🔍 📥 ⚙ 🏠 👤 à direita -->
     <header class="rf-topo">
       <button id="rf-bt-menu" type="button" aria-expanded="false" aria-controls="rf-menu" aria-label="Menu com todas as funções">☰</button>
       <div id="rf-marca" role="button" tabindex="0" aria-label="RootifyONE — início">
-        <span aria-hidden="true">🌳</span><strong>RootifyONE</strong><span id="rf-topo-tit"></span>
+        <span class="rf-marca-ic" aria-hidden="true">🌳</span><strong>RootifyONE</strong><span id="rf-topo-tit"></span>
       </div>
       <div class="rf-topo-acoes">
-        <button id="rf-bt-busca" type="button" aria-label="Buscar" title="Ctrl+K">🔍</button>
-        <button id="rf-bt-config" type="button" aria-label="Configurações">⚙</button>
-        <button id="rf-bt-inicio" type="button" aria-label="Início">🏠</button>
-        <button id="rf-bt-pessoa" type="button" aria-label="Sua conta">👤</button>
+        <div id="rf-idioma" class="rf-so-largo"></div>
+        <button id="rf-bt-busca" type="button" aria-label="Buscar" title="Ctrl+K"><span aria-hidden="true">🔍</span><span id="rf-bt-busca-rotulo" class="rf-busca-rotulo">Buscar…</span><kbd class="rf-busca-kbd" aria-hidden="true">Ctrl K</kbd></button>
+        <button id="rf-bt-inbox" type="button" aria-label="Caixa de entrada"><span aria-hidden="true">📥</span><span id="rf-inbox-bolha" class="rf-bolha" hidden></span></button>
+        <button id="rf-bt-config" type="button" aria-label="Configurações"><span aria-hidden="true">⚙</span></button>
+        <button id="rf-bt-inicio" type="button" aria-label="Início"><span aria-hidden="true">🏠</span></button>
+        <button id="rf-bt-pessoa" type="button" aria-label="Sua conta"><span aria-hidden="true">👤</span></button>
       </div>
     </header>
     <div id="rf-faixa-sim" class="rf-faixa-sim" role="status" hidden></div>
@@ -54,6 +57,8 @@
   <script src="rootify-telas-1.js"></script>
   <script src="rootify-telas-2.js"></script>
   <script src="rootify-ia-termos.js"></script>
+  <script src="rootify-email.js"></script>
+  <script src="rootify-assist.js"></script>
   <script src="rootify-app.js"></script>
 </body>
 </html>

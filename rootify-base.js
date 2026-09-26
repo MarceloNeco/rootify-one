@@ -17,7 +17,7 @@
   var RF = raiz.RF = raiz.RF || {};
   var d = document;
   var PREFIXO = 'rootify:v1:';
-  var VERSAO = '0.1.10';
+  var VERSAO = '0.2.0';
   RF.VERSAO = VERSAO;
   RF.telas = RF.telas || {};
   RF.h = RF.h || {};
@@ -48,10 +48,13 @@
       else n.setAttribute(k, v);
     });
     if (filhos !== undefined && filhos !== null && !Array.isArray(filhos)) filhos = [filhos];
-    (filhos || []).forEach(function (f) {
-      if (f === null || f === undefined || f === false) return;
-      n.appendChild(typeof f === 'string' || typeof f === 'number' ? d.createTextNode(String(f)) : f);
-    });
+    (function por(lista) {
+      lista.forEach(function (f) {
+        if (f === null || f === undefined || f === false) return;
+        if (Array.isArray(f)) return por(f);          /* lista dentro de lista: achata */
+        n.appendChild(typeof f === 'string' || typeof f === 'number' ? d.createTextNode(String(f)) : f);
+      });
+    })(filhos || []);
     return n;
   }
   function limpar(n) { while (n && n.firstChild) n.removeChild(n.firstChild); return n; }
@@ -128,6 +131,14 @@
     try { raiz.localStorage.setItem(PREFIXO + k, JSON.stringify(v)); return true; } catch (e) { return false; }
   }
   function apagarLocal(k) { try { raiz.localStorage.removeItem(PREFIXO + k); } catch (e) {} }
+
+  /* Endereço da plataforma: o atual (mesma origem) quando publicado; em
+     teste local, o domínio oficial. Nunca fixar endereço nas telas. */
+  function siteBase() {
+    var o = raiz.location.origin || '';
+    if (/^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])/i.test(o) || !/^https:/i.test(o)) return (RF.cat && RF.cat.DOMINIO ? RF.cat.DOMINIO.atual : 'https://solverone.com.br/');
+    return o + '/';
+  }
 
   /* ------------------------------------------------------------------
      2. CRIPTOGRAFIA (WebCrypto)
@@ -293,7 +304,7 @@
      ------------------------------------------------------------------ */
   var COLECOES = ['apps', 'planos', 'servicos', 'usuarios', 'segmentos', 'chamados', 'kb', 'termos', 'recados',
     'anuncios', 'versoes', 'papeis', 'automacoes', 'custos', 'pedidos', 'ropa', 'incidentes', 'consentimentos',
-    'log', 'config', 'publicacoes', 'respostas'];
+    'log', 'config', 'publicacoes', 'respostas', 'emails', 'modelosEmail', 'avisos'];
 
   var Cofre = {
     dek: null,          /* CryptoKey — só em memória, some ao bloquear */
@@ -334,7 +345,7 @@
       });
       return Promise.all(promessas);
     },
-    fechar: function () { Cofre.dek = null; Cofre.dekBruta = null; Cofre.db = {}; },
+    fechar: function () { Cofre.dek = null; Cofre.dekBruta = null; Cofre.db = {}; Papeis.limparCache(); },
 
     /* leitura e escrita das coleções */
     lista: function (nome) { if (!Cofre.db[nome]) Cofre.db[nome] = []; return Cofre.db[nome]; },
@@ -343,6 +354,7 @@
     salvar: function (nome) {
       if (!Cofre.dek) return Promise.reject(new Error('cofre-fechado'));
       var anterior = Cofre._filas[nome] || Promise.resolve();
+      if (nome === 'papeis') Papeis.limparCache();
       var dados = new TextEncoder().encode(JSON.stringify(Cofre.db[nome]));
       var p = anterior.then(function () { return cifrarBytes(Cofre.dek, dados); }).then(function (pac) {
         if (!gravarLocal('c:' + nome, pac)) {
@@ -495,6 +507,7 @@
     pessoa: null, metodo: null, simular: null, _timer: null,
     iniciar: function (pessoa, metodo, retomada) {
       Sessao.pessoa = pessoa; Sessao.metodo = metodo; Sessao.simular = null;
+      Papeis.limparCache();
       gravarLocal('ultima', pessoa.email);
       Sessao.vigiar();
       if (!retomada) Continuidade.guardar(pessoa, metodo);
@@ -549,8 +562,14 @@
     }
   };
 
+  /* pode() roda dezenas de vezes por tela; montar a lista de papéis a cada
+     chamada (clonando o catálogo) era o maior custo de cada renderização.
+     A lista fica em cache e é refeita só quando a coleção 'papeis' muda. */
   var Papeis = {
+    _cache: null,
+    limparCache: function () { Papeis._cache = null; },
     todos: function () {
+      if (Papeis._cache) return Papeis._cache;
       var custom = (Cofre.db.papeis || []);
       var base = RF.cat.PAPEIS.map(function (p) {
         var ajuste = custom.filter(function (c) { return c.id === p.id; })[0];
@@ -559,6 +578,7 @@
         return x;
       });
       custom.filter(function (c) { return c.proprio; }).forEach(function (c) { base.push(clonar(c)); });
+      Papeis._cache = base;
       return base;
     },
     achar: function (id) { return Papeis.todos().filter(function (p) { return p.id === id; })[0] || null; }
@@ -664,7 +684,7 @@
     if (!zona) { zona = el('div', { id: 'rf-avisos', 'aria-live': 'polite' }); d.body.appendChild(zona); }
     var n = el('div', { class: 'rf-aviso rf-aviso-' + (tipo || 'ok'), role: tipo === 'erro' ? 'alert' : 'status' }, [texto]);
     zona.appendChild(n);
-    setTimeout(function () { n.classList.add('rf-sai'); setTimeout(function () { n.remove(); }, 400); }, tipo === 'erro' ? 6000 : 3500);
+    setTimeout(function () { n.classList.add('rf-sai'); setTimeout(function () { n.remove(); }, 400); }, tipo === 'erro' ? 6000 : tipo === 'atencao' ? 5000 : 3500);
   };
 
   /* modal acessível; entra no histórico para o Voltar do celular fechar */
@@ -683,6 +703,7 @@
     var anterior = d.activeElement;
     var reg = { fundo: fundo, anterior: anterior, aoFechar: opcoes.aoFechar };
     pilha.push(reg);
+    RF.emitir('modal', pilha.length);
     try { raiz.history.pushState({ rfModal: pilha.length }, ''); } catch (e) {}
     function tentarFechar() {
       if (opcoes.antesDeFechar && opcoes.antesDeFechar() === false) return;
@@ -710,6 +731,7 @@
     var reg = pilha.pop();
     if (!reg) return;
     reg.fundo.remove();
+    RF.emitir('modal', pilha.length);
     if (reg.anterior && reg.anterior.focus) try { reg.anterior.focus(); } catch (e) {}
     if (!peloVoltar) { ui._ignorarPop = true; try { raiz.history.back(); } catch (e2) {} }
     if (reg.aoFechar) reg.aoFechar();
@@ -741,6 +763,7 @@
     var n = pilha.length;
     if (!n) { RF.Rota.ir(modulo, sub, id); return; }
     while (pilha.length) { pilha.pop().fundo.remove(); }
+    RF.emitir('modal', 0);
     ui.voltarEDepois(n, function () { RF.Rota.ir(modulo, sub, id); });
   };
 
@@ -1099,7 +1122,7 @@
   RF.util = { T: T, el: el, limpar: limpar, uid: uid, agora: agora, data: dataFmt, fuso: fusoTxt, fusoNome: fusoNome, semAcento: semAcento, distancia: distancia,
     mascararEmail: mascararEmail, mascararTexto: mascararTexto, copiar: copiar, baixar: baixar, clonar: clonar,
     idioma: idioma, lerLocal: lerLocal, gravarLocal: gravarLocal, apagarLocal: apagarLocal, sha256: sha256,
-    criarZip: criarZip, csv: csv, lerCsv: lerCsv, PREFIXO: PREFIXO };
+    criarZip: criarZip, csv: csv, lerCsv: lerCsv, PREFIXO: PREFIXO, siteBase: siteBase };
   RF.Cofre = Cofre; RF.Sessao = Sessao; RF.Continuidade = Continuidade; RF.Papeis = Papeis; RF.Log = Log; RF.Digital = Digital; RF.Rota = Rota;
   RF.GitHub = GitHub; RF.ui = ui;
   RF.instalar = instalar; RF.entrar = entrar; RF.definirPin = definirPin; RF.trocarSenha = trocarSenha;
