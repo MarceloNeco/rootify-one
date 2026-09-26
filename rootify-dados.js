@@ -15,7 +15,7 @@
   var U = RF.util, T = U.T, C = RF.Cofre;
   var HORA = 3600000, DIA = 24 * HORA;
 
-  var ANUNCIOS_INICIAIS = [{"id": "moneytrio", "nome": "MoneyTrio", "cor": "#d6a076", "glifo": "💰", "link": "https://marceloneco.github.io/investify-me/", "frase": {"pt": "Você sabe quanto gastou este mês? A resposta costuma surpreender.", "en": "Do you know what you spent this month? The answer usually surprises."}}, {"id": "rise-one", "nome": "RiseONE", "cor": "#beb0ec", "glifo": "🏃", "link": "https://marceloneco.github.io/rise-one/", "frase": {"pt": "O treino que você não registra é o treino que você esquece.", "en": "The workout you don't log is the workout you forget."}}, {"id": "omnilife-one", "nome": "OmniLifeONE", "cor": "#e4a460", "glifo": "🧩", "link": "https://marceloneco.github.io/omnilife-one/", "selo": {"pt": "EM BREVE", "en": "SOON"}, "frase": {"pt": "A casa, a agenda e os documentos da família num lugar só.", "en": "Home, calendar and family papers in one place."}}, {"id": "planos-candidatos-2026", "nome": "Eleições 2026", "cor": "#a4c4a6", "glifo": "🗳️", "link": "https://marceloneco.github.io/planos-candidatos-2026/", "frase": {"pt": "Antes de decidir o seu voto, leia o que eles escreveram.", "en": "Before deciding your vote, read what they actually wrote."}}, {"id": "contador-de-historias", "nome": "Contador de Histórias", "cor": "#96c0e8", "glifo": "📖", "link": "https://marceloneco.github.io/contador-de-historias/", "frase": {"pt": "Hoje a história pode ser nova — e contada com a sua voz.", "en": "Tonight's story can be a new one — told in your own voice."}}, {"id": "cifras-violao", "nome": "Cifras e Acordes", "cor": "#eaa4b8", "glifo": "🎸", "link": "https://marceloneco.github.io/cifras-violao/", "frase": {"pt": "Aquela música que você sempre quis tocar está a um tom de distância.", "en": "That song you always wanted to play is one key away."}}];
+  var ANUNCIOS_INICIAIS = [{"id": "moneytrio", "nome": "MoneyTrio", "cor": "#d6a076", "glifo": "💰", "link": "https://solverone.com.br/investify-me/", "frase": {"pt": "Você sabe quanto gastou este mês? A resposta costuma surpreender.", "en": "Do you know what you spent this month? The answer usually surprises."}}, {"id": "rise-one", "nome": "RiseONE", "cor": "#beb0ec", "glifo": "🏃", "link": "https://solverone.com.br/rise-one/", "frase": {"pt": "O treino que você não registra é o treino que você esquece.", "en": "The workout you don't log is the workout you forget."}}, {"id": "omnilife-one", "nome": "OmniLifeONE", "cor": "#e4a460", "glifo": "🧩", "link": "https://solverone.com.br/omnilife-one/", "selo": {"pt": "EM BREVE", "en": "SOON"}, "frase": {"pt": "A casa, a agenda e os documentos da família num lugar só.", "en": "Home, calendar and family papers in one place."}}, {"id": "planos-candidatos-2026", "nome": "Eleições 2026", "cor": "#a4c4a6", "glifo": "🗳️", "link": "https://solverone.com.br/planos-candidatos-2026/", "frase": {"pt": "Antes de decidir o seu voto, leia o que eles escreveram.", "en": "Before deciding your vote, read what they actually wrote."}}, {"id": "contador-de-historias", "nome": "Contador de Histórias", "cor": "#96c0e8", "glifo": "📖", "link": "https://solverone.com.br/contador-de-historias/", "frase": {"pt": "Hoje a história pode ser nova — e contada com a sua voz.", "en": "Tonight's story can be a new one — told in your own voice."}}, {"id": "cifras-violao", "nome": "Cifras e Acordes", "cor": "#eaa4b8", "glifo": "🎸", "link": "https://solverone.com.br/cifras-violao/", "frase": {"pt": "Aquela música que você sempre quis tocar está a um tom de distância.", "en": "That song you always wanted to play is one key away."}}];
 
   /* ------------------------------------------------------------------
      SEMEAR (primeira instalação)
@@ -339,7 +339,18 @@
           if (a.tipo === 'avisar') {
             var msg = (a.valor || T(r.nome)) + (alvo.numero ? ' · #' + alvo.numero : '');
             RF.ui.aviso('⚙ ' + msg, 'info');
+            /* fica também na caixa de entrada 📥, para quem não viu na hora */
+            var ir = alvo.numero && alvo.assunto ? ['suporte', 'chamado', alvo.id] : alvo.tipo && alvo.prazo ? ['privacidade'] : null;
+            if (RF.Inbox) RF.Inbox.avisar('⚙ ' + T(r.nome), msg, 'info', ir);
             try { if (raiz.DGO && raiz.DGO.notificacoes && raiz.DGO.notificacoes.estado() === 'permitido') raiz.DGO.notificacoes.mostrar('rootify', { titulo: 'RootifyONE', texto: msg }); } catch (e) {}
+          }
+          /* "enviar e-mail": monta pelo modelo e põe na caixa de saída (sai sozinho se houver provedor) */
+          if (a.tipo === 'email' && RF.Email && a.valor) {
+            var u = alvo.usuario && RF.h.usuario ? RF.h.usuario(alvo.usuario) : null;
+            var email = u ? u.email : (alvo.contato && alvo.contato.email) || alvo.email;
+            if (email) RF.Email.enfileirar({ modelo: a.valor, para: email, nome: (u ? u.nome : (alvo.contato && alvo.contato.nome) || alvo.nome) || '', idioma: u && u.idioma === 'en' ? 'en' : 'pt', app: alvo.app || '*',
+              dados: { numero: alvo.numero, assunto: alvo.assunto, prazo: alvo.prazo ? U.data(alvo.prazo) : '', app: alvo.app && RF.h.app && RF.h.app(alvo.app) ? T(RF.h.app(alvo.app).nome) : 'SolverONE' },
+              origem: { tipo: 'automacao', rotulo: T('Regra: ', 'Rule: ') + T(r.nome), ir: alvo.numero && alvo.assunto ? ['suporte', 'chamado', alvo.id] : ['automacoes'] } }).catch(function () {});
           }
         });
         r.execucoes = (r.execucoes || 0) + 1; r.ultimaEm = U.agora();

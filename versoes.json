@@ -2,6 +2,31 @@
   "app": "rootify-one",
   "versoes": [
     {
+      "versao": "0.2.0",
+      "data": "2026-09-26",
+      "hora": "09:30:00",
+      "itens": {
+        "pt": [
+          "Visual novo, mais limpo e rápido: cabeçalho padrão da SolverONE (☰ · marca · PT|EN no computador · 🔍 📥 ⚙ 🏠 👤), menu ☰ com 4 ações rápidas no topo, grupos e partes em acordeão, busca com Ctrl+K, tema claro/escuro/como o aparelho, tamanho do texto e menos movimento em ⚙ → Aparência.",
+          "📥 Caixa de entrada: tudo o que pede atenção num lugar só (prazos de chamados, pedidos LGPD, termos para aprovar, publicação pendente, e-mails aguardando, avisos das automações), com bolha no cabeçalho colorida pela prioridade mais alta.",
+          "✨ AssistONE: assistente no canto de baixo em todas as telas — \"Você está em…\" com atalhos, tour rápido, busca dentro do balão, ajuda da tela, passo a passo de configuração com progresso e dicas por tela (uma vez só). Liga/desliga em ⚙ → Geral.",
+          "✉️ E-mails: caixa de saída (pronto → enviado / enviado à mão / falhou), 10 modelos PT/EN com campos {nome} {app} {link}…, remetentes @solverone.com.br, lista de DNS (SPF, DKIM, DMARC, MX) e envio por proxy (Cloudflare Worker / Firebase Function) com exemplo pronto. Respostas de chamado, convite da equipe, confirmação e resposta de pedido LGPD e a ação \"enviar e-mail\" das automações já saem por aqui.",
+          "🌐 Domínio solverone.com.br: catálogo de apps e anúncios no endereço novo (com botão para trocar os antigos), seção Domínio e DNS em Integrações com os registros do GitHub Pages, teste dos endereços e lembrete do Firebase. Links para o Portal seguem o endereço atual (nunca fixo).",
+          "Barra de atalhos montada por arrastar e soltar (ou por toque), com troca, ordem, ↺ padrão e Desfazer; salva sozinha.",
+          "Mais rápido: os papéis ficam em cache (a permissão era recalculada dezenas de vezes por tela) e o menu só atualiza o que mudou."
+        ],
+        "en": [
+          "New, cleaner and faster look: SolverONE standard header (☰ · brand · PT|EN on desktop · 🔍 📥 ⚙ 🏠 👤), ☰ menu with 4 quick actions on top, groups and accordion parts, Ctrl+K search, light/dark/device theme, text size and reduced motion in ⚙ → Appearance.",
+          "📥 Inbox: everything that needs attention in one place (ticket deadlines, LGPD requests, terms to approve, pending publication, e-mails waiting, automation alerts), with a header badge coloured by the highest priority.",
+          "✨ AssistONE: assistant in the bottom corner on every screen — \"You are in…\" with shortcuts, quick tour, search inside the balloon, screen help, setup walkthrough with progress and per-screen tips (once). On/off in ⚙ → General.",
+          "✉️ E-mails: outbox (ready → sent / sent by hand / failed), 10 PT/EN templates with {nome} {app} {link}… fields, @solverone.com.br senders, DNS checklist (SPF, DKIM, DMARC, MX) and delivery through a proxy (Cloudflare Worker / Firebase Function) with a ready example. Ticket replies, team invitations, LGPD acknowledgement and answer and the automations' \"send e-mail\" action already leave from here.",
+          "🌐 solverone.com.br domain: app catalog and ads on the new address (with a button to switch old ones), Domain and DNS section in Integrations with the GitHub Pages records, address test and Firebase reminder. Portal links follow the current address (never hard-coded).",
+          "Shortcut bar built by drag and drop (or tap), with swap, order, ↺ default and Undo; saves on its own.",
+          "Faster: roles are cached (permission was recomputed dozens of times per screen) and the menu only updates what changed."
+        ]
+      }
+    },
+    {
       "versao": "0.1.10",
       "data": "2026-09-25",
       "hora": "18:00:26",

@@ -53,7 +53,9 @@ Nenhum dado pessoal vai para o GitHub. Usuários, chamados, equipe e o log ficam
 3. Em **Build and deployment → Source**, escolha **Deploy from a branch**.
 4. Em **Branch**, escolha **main** e a pasta **/ (root)**. Toque em **Save**.
 5. Espere 1 a 2 minutos e recarregue a página: aparece o endereço
-   `https://marceloneco.github.io/rootify-one/`.
+   `https://solverone.com.br/rootify-one/` (o domínio é configurado uma vez, no repositório
+   do Portal `marceloneco.github.io`; os outros herdam — ver "Domínio" abaixo). Enquanto o
+   domínio não estiver ligado, o endereço é `https://marceloneco.github.io/rootify-one/`.
 6. Abra esse endereço, crie a **conta do dono** e **guarde o código de recuperação**
    fora do aparelho (anotado em papel ou no gerenciador de senhas).
 
@@ -72,7 +74,7 @@ Repita o passo 2 com:
 
 Depois, **ou** suba o pacote inicial à mão (passo 3 com o `SOLVERONE-DADOS …zip`),
 **ou** deixe o RootifyONE publicar sozinho (passo 7). Ligue o Pages igual ao passo 4 —
-o endereço fica `https://marceloneco.github.io/solverone-dados/`.
+o endereço fica `https://solverone.com.br/solverone-dados/`.
 
 ## 6. Criar o token que deixa o RootifyONE publicar
 
@@ -107,7 +109,36 @@ arquivos, e vence sozinha.
 Sem token? Use **Baixar pacote (zip)** e suba os arquivos à mão (passo 3), depois
 toque em **Já subi** para o RootifyONE registrar.
 
-## 8. Primeiros ajustes sugeridos
+## 8. Domínio solverone.com.br (uma vez só)
+
+1. No Registro.br, entre no domínio → **DNS** → modo avançado, e crie os registros que o
+   RootifyONE lista em ☰ → **Integrações e chaves → Domínio e DNS** (4 registros A, 4 AAAA,
+   o CNAME `www` e o TXT que o GitHub pede). Há um botão **Copiar** em cada um.
+2. No GitHub, repositório `marceloneco.github.io` → Settings → Pages → **Custom domain**:
+   `solverone.com.br` → Save. Espere o ✓ de DNS e marque **Enforce HTTPS**.
+3. Todos os repositórios passam a responder em `solverone.com.br/<repositório>/`.
+4. No RootifyONE, ☰ → **Apps**: se aparecer o aviso de endereços antigos, toque em
+   **Trocar para o domínio novo** e depois **Publicar**.
+5. Se usar Firebase: Authentication → Settings → Domínios autorizados → acrescente
+   `solverone.com.br` e `www.solverone.com.br`.
+
+> Mudar de endereço é mudar de "origem" para o navegador: o cofre do RootifyONE, a digital e
+> o app instalado no endereço antigo não passam sozinhos. No endereço antigo, ⚙ → Cópia de
+> segurança → **Baixar cópia cifrada**; no novo, **Restaurar** e registrar a digital de novo.
+
+## 9. E-mails (já fica pronto, o envio automático vem depois)
+
+1. ☰ → **E-mails → Remetentes e domínio**: confira os remetentes (`no-reply@`, `suporte@`,
+   `privacidade@`, `contato@` de solverone.com.br) e a lista de DNS do e-mail (SPF, DKIM,
+   DMARC, MX). Marque cada registro feito.
+2. **Modelos**: revise os 10 textos PT/EN (boas-vindas, senha, convite, chamado, LGPD, termos…).
+3. Hoje, cada e-mail que a plataforma quer mandar entra na **Caixa de saída**: toque em
+   **Abrir no programa de e-mail** (o texto vai pronto) ou **Copiar**. Também aparece na 📥.
+4. Para sair sozinho: escolha um provedor (Resend é grátis até 3.000/mês), publique o proxy
+   (há um Cloudflare Worker pronto para copiar em **Envio (provedor)**) e cole o endereço e o
+   token → **Salvar** → **Testar conexão**.
+
+## 10. Primeiros ajustes sugeridos
 
 1. **Termos e políticas**: os 4 modelos vêm como rascunho. Revise, **peça validação de
    um advogado**, envie para aprovação, aprove e marque para publicar.
@@ -115,6 +146,8 @@ toque em **Já subi** para o RootifyONE registrar.
    A senha provisória aparece uma vez; a pessoa troca no primeiro acesso.
 3. **Minha segurança**: registre a digital e um PIN.
 4. **O que falta especificar**: exporte o CSV e cole na sua planilha de diretrizes.
+5. **AssistONE** (o personagem no canto de baixo): toque em **Começar** e siga o passo a passo —
+   ele confere sozinho o que já está feito. Liga/desliga em ⚙ → Geral.
 
 ---
 

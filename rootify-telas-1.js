@@ -188,6 +188,22 @@
       ui.botaoSe('apps:criar', null, '+ ' + T('Novo app', 'New app'), function () { editarApp(null); }, 'pri')
     ]);
     var lista = C.lista('apps').filter(function (a) { return RF.noEscopo(a.id); });
+    /* domínio novo (solverone.com.br): endereços antigos ainda no catálogo ou nos anúncios */
+    var antigo = RF.cat.DOMINIO.antigo, novoDom = RF.cat.DOMINIO.atual;
+    var desatualizados = C.lista('apps').filter(function (a) { return a.url && a.url.indexOf(antigo) === 0; }).length +
+      C.lista('anuncios').filter(function (a) { return a.link && a.link.indexOf(antigo) === 0; }).length;
+    if (desatualizados && RF.pode('apps:editar')) {
+      area.appendChild(el('div', { class: 'rf-faixa-aviso rf-faixa-info' }, [
+        el('span', { texto: '🌐 ' + desatualizados + T(' endereço(s) ainda apontam para ', ' address(es) still point to ') + antigo.replace('https://', '') + T('. A plataforma agora mora em ', '. The platform now lives at ') + novoDom.replace('https://', '') + '.' }),
+        ui.botao(T('Trocar para o domínio novo', 'Switch to the new domain'), function () {
+          var mudados = [];
+          C.lista('apps').forEach(function (a) { if (a.url && a.url.indexOf(antigo) === 0) { a.url = novoDom + a.url.slice(antigo.length); mudados.push(a.id); } });
+          C.lista('anuncios').forEach(function (a) { if (a.link && a.link.indexOf(antigo) === 0) { a.link = novoDom + a.link.slice(antigo.length); mudados.push('anuncio:' + a.id); } });
+          C.salvar('anuncios').then(function () {
+            return RF.mudar('apps', 'apps', 'dominio', '', antigo, novoDom, T('Endereços trocados para ', 'Addresses switched to ') + novoDom + ': ' + mudados.join(', '));
+          }).then(function () { ui.aviso(T('Pronto. Publique para os apps lerem o catálogo novo.', 'Done. Publish so the apps read the new catalog.')); RF.renderizar(); });
+        }, 'pri')]));
+    }
     var tab = ui.tabela([
       { id: 'nome', nome: 'App', valor: function (a) { return T(a.nome); }, desenhar: function (a) {
         return el('span', { class: 'rf-app-nome' }, [el('span', { class: 'rf-glifo', style: { background: a.cor }, 'aria-hidden': 'true', texto: a.glifo }), el('span', {}, [el('strong', { texto: T(a.nome) }), el('br'), el('small', { class: 'rf-dica', texto: T(a.descricao) })])]);
@@ -223,7 +239,7 @@
     });
   }
   function editarApp(a) {
-    var novo = !a, x = a ? U.clonar(a) : { id: '', nome: {}, descricao: {}, repo: '', url: 'https://marceloneco.github.io/', estado: 'backlog', cor: '#60a5fa', glifo: '✨', versaoMinima: '', responsavel: '' };
+    var novo = !a, x = a ? U.clonar(a) : { id: '', nome: {}, descricao: {}, repo: '', url: RF.cat.DOMINIO.atual, estado: 'backlog', cor: '#60a5fa', glifo: '✨', versaoMinima: '', responsavel: '' };
     var podeEditar = RF.pode(novo ? 'apps:criar' : 'apps:editar', x.id || null);
     var id = ui.entrada(x.id, { attrs: { disabled: !novo, pattern: '[a-z0-9-]+' } });
     var nome = ui.bilingue(T('Nome', 'Name'), x.nome), desc = ui.bilingue(T('Descrição curta', 'Short description'), x.descricao);
@@ -1102,13 +1118,23 @@
     grade.appendChild(lado);
     area.appendChild(grade);
   }
+  /* resposta para o cliente: vira um e-mail na caixa de saída (modelo "Resposta de
+     chamado", remetente suporte@). Sem provedor, abre no programa de e-mail. */
   function entregar(ch, texto, u, forcar) {
     var email = u ? u.email : ch.contato && ch.contato.email;
     if (!forcar) { ui.aviso(T('Resposta registrada.', 'Reply recorded.')); return; }
     if (!email) return ui.aviso(T('Sem e-mail do cliente.', 'No customer e-mail.'), 'erro');
-    var assunto = '[#' + ch.numero + '] ' + ch.assunto;
-    raiz.location.href = 'mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent(assunto) + '&body=' + encodeURIComponent(texto);
-    RF.Log.registrar('suporte', 'email', ch.id, null, null, T('E-mail aberto no programa local para #', 'E-mail opened in local program for #') + ch.numero);
+    if (!RF.Email) {
+      raiz.location.href = 'mailto:' + encodeURIComponent(email) + '?subject=' + encodeURIComponent('[#' + ch.numero + '] ' + ch.assunto) + '&body=' + encodeURIComponent(texto);
+      return;
+    }
+    RF.Email.enfileirar({ modelo: 'resposta-chamado', para: email, nome: (u ? u.nome : ch.contato && ch.contato.nome) || '', idioma: idiomaCliente(ch), app: ch.app,
+      dados: { numero: ch.numero, assunto: ch.assunto, resposta: texto, app: H.app(ch.app) ? T(H.app(ch.app).nome) : 'SolverONE' },
+      origem: { tipo: 'chamado', rotulo: T('Chamado #', 'Ticket #') + ch.numero, ir: ['suporte', 'chamado', ch.id] }, semEnvio: false })
+      .then(function (item) {
+        if (item.status === 'enviado') return ui.aviso(T('Resposta enviada por e-mail.', 'Reply sent by e-mail.'));
+        RF.telasEmail.abrirItem(item);
+      }).catch(function (e) { ui.aviso(String(e.message), 'erro'); });
   }
   function sugerirIA(ch, caixa) {
     if (!raiz.DGO || !raiz.DGO.ia) return ui.aviso(T('Módulo de IA não carregado.', 'AI module not loaded.'), 'erro');

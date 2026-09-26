@@ -2,7 +2,9 @@
    RootifyONE — CASCA DO APP
    ---------------------------------------------------------------------
    Telas de acesso (instalação, entrar, bloqueio, código de recuperação),
-   topo, menu ☰, barra de baixo, busca, simulador de papel e o
+   cabeçalho (☰ · marca · PT|EN · 🔍 📥 ⚙ 🏠 👤), menu ☰ (ações rápidas,
+   grupos e acordeão), barra de atalhos, busca compartilhada (lupa e
+   AssistONE), caixa de entrada 📥, aparência, simulador de papel e o
    "roteador" que chama a tela certa de RF.telas.
    ===================================================================== */
 (function (raiz) {
@@ -10,8 +12,28 @@
   var RF = raiz.RF, U = RF.util, T = U.T, el = U.el, ui = RF.ui, C = RF.Cofre, S = RF.Sessao;
   var d = document;
   RF.telas = RF.telas || {};
+  var LARGO = 1100;                                  /* a partir daqui o menu fica fixo ao lado */
 
   var acesso, casca, main, menu, topoTitulo, barraBaixo, faixaSim;
+
+  /* ------------------------------------------------------------------
+     APARÊNCIA (tema, tamanho do texto, movimento) — por aparelho, vale
+     antes mesmo de entrar. Guardada fora do cofre, de propósito.
+     ------------------------------------------------------------------ */
+  var Aparencia = {
+    ler: function () { return U.lerLocal('aparencia', { tema: 'auto', texto: 100, movimento: 'auto' }); },
+    gravar: function (a) { U.gravarLocal('aparencia', a); Aparencia.aplicar(); },
+    aplicar: function () {
+      var a = Aparencia.ler(), h = d.documentElement;
+      if (a.tema === 'claro' || a.tema === 'escuro') h.setAttribute('data-theme', a.tema === 'claro' ? 'light' : 'dark');
+      else h.removeAttribute('data-theme');
+      h.style.fontSize = (a.texto && a.texto !== 100) ? (a.texto / 100 * 100) + '%' : '';
+      h.classList.toggle('rf-sem-movimento', a.movimento === 'menos');
+      var meta = d.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', getComputedStyle(d.body).getPropertyValue('--sup').trim() || '#0b1220');
+    }
+  };
+  RF.Aparencia = Aparencia;
 
   /* ------------------------------------------------------------------
      ACESSO
@@ -21,10 +43,14 @@
     acesso.hidden = false;
     U.limpar(acesso);
     acesso.appendChild(el('div', { class: 'rf-acesso-caixa' }, [
-      el('div', { class: 'rf-marca-grande' }, [el('span', { class: 'rf-logo', 'aria-hidden': 'true', texto: '🌳' }),
-        el('div', {}, [el('h1', { texto: 'RootifyONE' }), el('p', { texto: T('Administração central da SolverONE', 'SolverONE central administration') })])]),
+      el('div', { class: 'rf-acesso-topo' }, [
+        el('div', { class: 'rf-marca-grande' }, [el('span', { class: 'rf-logo', 'aria-hidden': 'true', texto: '🌳' }),
+          el('div', {}, [el('h1', { texto: 'RootifyONE' }), el('p', { texto: T('Administração central da SolverONE', 'SolverONE central administration') })])]),
+        seletorIdioma('rf-seg-acesso')
+      ]),
       conteudo
     ]));
+    RF.emitir('acesso', true);
     var f = acesso.querySelector('[autofocus]') || acesso.querySelector('input');
     if (f) setTimeout(function () { f.focus(); }, 50);
   }
@@ -160,7 +186,8 @@
     }
 
     if (pessoa) {
-      corpo.appendChild(el('p', { class: 'rf-quem' }, [T('Entrando como ', 'Signing in as '), el('strong', { texto: pessoa.nome + ' (' + pessoa.apelido + ')' })]));
+      corpo.appendChild(el('p', { class: 'rf-quem' }, [el('span', { class: 'rf-avatar', 'aria-hidden': 'true', texto: pessoa.nome.charAt(0) }),
+        el('span', {}, [T('Entrando como ', 'Signing in as '), el('strong', { texto: pessoa.nome + ' (' + pessoa.apelido + ')' })])]));
       if (pessoa.cred.webauthn) {
         var btD = ui.botao('👆 ' + T('Entrar com a digital', 'Sign in with fingerprint'), function () {
           btD.disabled = true;
@@ -235,6 +262,28 @@
   }
 
   /* ------------------------------------------------------------------
+     IDIOMA — PT|EN no cabeçalho (computador), no topo do ☰ (celular) e
+     na tela de entrada. Um componente só.
+     ------------------------------------------------------------------ */
+  function seletorIdioma(classe) {
+    var atual = U.idioma();
+    var g = el('div', { class: 'rf-seg ' + (classe || ''), role: 'group', 'aria-label': T('Idioma', 'Language') });
+    [['pt', 'PT'], ['en', 'EN']].forEach(function (o) {
+      var b = el('button', { type: 'button', class: atual === o[0] ? 'rf-on' : '', 'aria-pressed': atual === o[0] ? 'true' : 'false', texto: o[1],
+        title: o[0] === 'pt' ? 'Português' : 'English' });
+      b.onclick = function () { trocarIdioma(o[0]); };
+      g.appendChild(b);
+    });
+    return g;
+  }
+  function trocarIdioma(l) {
+    if (raiz.DGO && raiz.DGO.trocarIdioma) raiz.DGO.trocarIdioma(l);
+    else { U.gravarLocal('idioma', l); d.dispatchEvent(new CustomEvent('dgo:idioma', { detail: l })); }
+  }
+  RF.seletorIdioma = seletorIdioma;
+  RF.trocarIdioma = trocarIdioma;
+
+  /* ------------------------------------------------------------------
      CASCA: topo, menu, barra de baixo
      ------------------------------------------------------------------ */
   function abrirCasca() {
@@ -246,6 +295,8 @@
     if (!raiz.location.hash) { try { raiz.history.replaceState(raiz.history.state, '', '#/painel'); } catch (e) { raiz.location.hash = '#/painel'; } }
     renderizar();
     prepararGuardaVoltar();
+    RF.emitir('acesso', false);
+    RF.emitir('entrou', S.pessoa);
   }
 
   /* Voltar do celular na primeira tela: em vez de sair do RootifyONE sem aviso,
@@ -274,44 +325,93 @@
   }
 
   function modulosVisiveis() {
-    return RF.cat.MODULOS.filter(function (m) { return RF.pode(m.recurso + ':ver'); });
+    return RF.cat.MODULOS.filter(function (m) { return !m.oculto && RF.pode(m.recurso + ':ver'); });
   }
   function contagem(id) {
     if (!C.aberto()) return 0;
     if (id === 'suporte') return RF.dados.Chamados.abertos().filter(function (c) { return RF.noEscopo(c.app); }).length;
     if (id === 'privacidade') return RF.dados.Privacidade.abertos().length;
     if (id === 'termos') return RF.dados.Termos.pendentesAprovacao().length;
+    if (id === 'emails' && RF.Email) return RF.Email.aguardando().length;
     return 0;
   }
+
+  /* Ações rápidas do ☰: até 4, filtradas pela permissão e pelo que existe */
+  function acoesRapidas() {
+    return RF.cat.ACOES_RAPIDAS.filter(function (a) {
+      if (!RF.pode(a.perm)) return false;
+      return a.rota ? true : typeof RF.h[a.faz] === 'function';
+    }).slice(0, 4);
+  }
+  function executarRapida(a) {
+    if (a.rota) return RF.Rota.ir(a.rota);
+    RF.h[a.faz]({});
+  }
+
+  var abertosNoMenu = {};   /* grupos (acordeão) que a pessoa abriu à mão */
   function montarMenu() {
     U.limpar(menu);
     var rota = RF.Rota.atual();
     var lista = el('div', { class: 'rf-menu-rola' });
+
+    /* celular: idioma no topo da gaveta (no computador ele fica no cabeçalho) */
+    lista.appendChild(el('div', { class: 'rf-menu-idioma' }, [seletorIdioma()]));
+
+    var rapidas = acoesRapidas();
+    if (rapidas.length) {
+      lista.appendChild(el('div', { class: 'rf-menu-rapidas', role: 'group', 'aria-label': T('Ações rápidas', 'Quick actions') }, rapidas.map(function (a) {
+        var b = el('button', { type: 'button', class: 'rf-rapida' }, [el('span', { class: 'rf-rapida-ic', 'aria-hidden': 'true', texto: a.icone }), el('span', { texto: T(a.nome) })]);
+        b.onclick = function () { fecharMenuE(function () { executarRapida(a); }); };
+        return b;
+      })));
+    }
+
     RF.cat.GRUPOS.forEach(function (g) {
       var itens = modulosVisiveis().filter(function (m) { return m.grupo === g.id; });
       if (!itens.length) return;
       lista.appendChild(el('p', { class: 'rf-menu-grupo', texto: T(g.nome) }));
       itens.forEach(function (m) {
         var n = contagem(m.id);
-        var a = el('a', { href: '#/' + m.id, class: 'rf-menu-item' + (rota.modulo === m.id ? ' rf-ativo' : ''),
-          'aria-current': rota.modulo === m.id ? 'page' : null }, [
+        var atual = rota.modulo === m.id;
+        var partes = (m.partes || []).slice();
+        var temPartes = partes.length > 0;
+        var abertoAgora = temPartes && (atual || abertosNoMenu[m.id]);
+        var a = el('a', { href: '#/' + m.id, class: 'rf-menu-item' + (atual ? ' rf-ativo' : ''), 'aria-current': atual ? 'page' : null, 'data-modulo': m.id }, [
           el('span', { class: 'rf-ic', 'aria-hidden': 'true', texto: m.icone }), el('span', { class: 'rf-menu-nome', texto: T(m.nome) }),
-          n ? el('span', { class: 'rf-conta', texto: String(n), 'aria-label': n + T(' pendentes', ' pending') }) : null,
+          el('span', { class: 'rf-conta', 'data-conta': m.id, texto: String(n), hidden: !n, 'aria-label': n + T(' pendentes', ' pending') }),
           m.estado !== 'ativo' ? el('span', { class: 'rf-ponto rf-ponto-' + m.estado, title: m.estado === 'futuro' ? T('futuro', 'future') : T('parcial', 'partial') }) : null
         ]);
         a.onclick = function (e) {
-          if (raiz.innerWidth >= 1100) return;            /* menu fixo ao lado: o link segue normal */
+          if (raiz.innerWidth >= LARGO) return;            /* menu fixo ao lado: o link segue normal */
           e.preventDefault();
           fecharMenuEIr(m.id);
         };
-        lista.appendChild(a);
+        if (!temPartes) { lista.appendChild(a); return; }
+        /* acordeão de um nível: o nome abre a tela; o ▸ mostra as partes */
+        var sub = el('div', { class: 'rf-menu-sub', id: 'rf-sub-' + m.id, hidden: !abertoAgora }, partes.map(function (p) {
+          var ativo = atual && (rota.sub || partes[0].sub) === p.sub;
+          var l = el('a', { href: '#/' + m.id + '/' + p.sub, class: 'rf-menu-subitem' + (ativo ? ' rf-ativo' : ''), 'aria-current': ativo ? 'page' : null, texto: T(p.nome) });
+          l.onclick = function (e) {
+            if (raiz.innerWidth >= LARGO) return;
+            e.preventDefault();
+            fecharMenuE(function () { RF.Rota.ir(m.id, p.sub); });
+          };
+          return l;
+        }));
+        var seta = el('button', { type: 'button', class: 'rf-menu-seta', 'aria-expanded': abertoAgora ? 'true' : 'false', 'aria-controls': 'rf-sub-' + m.id,
+          'aria-label': T('Mostrar partes de ', 'Show parts of ') + T(m.nome), texto: '▸' });
+        seta.onclick = function () {
+          var ab = sub.hidden; sub.hidden = !ab; abertosNoMenu[m.id] = ab;
+          seta.setAttribute('aria-expanded', ab ? 'true' : 'false');
+        };
+        lista.appendChild(el('div', { class: 'rf-menu-com-partes' + (abertoAgora ? ' rf-aberto' : '') }, [el('div', { class: 'rf-menu-linha' }, [a, seta]), sub]));
       });
     });
     menu.appendChild(lista);
     menu.appendChild(el('div', { class: 'rf-menu-pe' }, [
-      el('a', { href: 'https://marceloneco.github.io/', target: '_blank', rel: 'noopener', class: 'rf-menu-item' },
-        [el('span', { class: 'rf-ic', 'aria-hidden': 'true', texto: '🧭' }), el('span', { texto: T('Portal de Projetos ↗', 'Projects Portal ↗') })]),
-      el('p', { class: 'rf-dica', texto: 'RootifyONE ' + RF.VERSAO })
+      el('a', { href: U.siteBase(), target: '_blank', rel: 'noopener', class: 'rf-menu-item' },
+        [el('span', { class: 'rf-ic', 'aria-hidden': 'true', texto: '🧭' }), el('span', { class: 'rf-menu-nome', texto: T('Portal SolverONE ↗', 'SolverONE Portal ↗') })]),
+      el('p', { class: 'rf-dica rf-menu-versao', texto: 'RootifyONE ' + RF.VERSAO })
     ]));
     /* menu mais comprido que a tela: dica de que há mais para baixo */
     setTimeout(function () { lista.classList.toggle('rf-tem-mais', lista.scrollHeight > lista.clientHeight + 4); }, 0);
@@ -319,38 +419,71 @@
       lista.classList.toggle('rf-tem-mais', lista.scrollTop + lista.clientHeight < lista.scrollHeight - 4);
     });
   }
+  /* só o que muda entre telas: item ativo, acordeão da tela atual e contadores */
+  function atualizarMenu() {
+    var rota = RF.Rota.atual();
+    Array.prototype.forEach.call(menu.querySelectorAll('.rf-menu-item[data-modulo]'), function (a) {
+      var atual = a.getAttribute('data-modulo') === rota.modulo;
+      a.classList.toggle('rf-ativo', atual);
+      if (atual) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+      var caixa = a.closest('.rf-menu-com-partes');
+      if (caixa) {
+        var sub = caixa.querySelector('.rf-menu-sub'), seta = caixa.querySelector('.rf-menu-seta');
+        var abrir = atual || !!abertosNoMenu[a.getAttribute('data-modulo')];
+        sub.hidden = !abrir; seta.setAttribute('aria-expanded', abrir ? 'true' : 'false'); caixa.classList.toggle('rf-aberto', abrir);
+        Array.prototype.forEach.call(sub.querySelectorAll('a'), function (l) {
+          var ativo = atual && l.getAttribute('href') === '#/' + rota.modulo + '/' + (rota.sub || (RF.cat.modulo(rota.modulo).partes[0] || {}).sub);
+          l.classList.toggle('rf-ativo', ativo);
+          if (ativo) l.setAttribute('aria-current', 'page'); else l.removeAttribute('aria-current');
+        });
+      }
+    });
+    Array.prototype.forEach.call(menu.querySelectorAll('[data-conta]'), function (c) {
+      var n = contagem(c.getAttribute('data-conta'));
+      c.textContent = String(n); c.hidden = !n;
+    });
+  }
   function abrirMenu() {
     d.body.classList.add('rf-menu-aberto');
     d.getElementById('rf-bt-menu').setAttribute('aria-expanded', 'true');
-    if (raiz.innerWidth < 1100) {
+    if (raiz.innerWidth < LARGO) {
       try { raiz.history.pushState({ rfMenu: 1 }, ''); } catch (e) {}
-      var primeiro = menu.querySelector('a'); if (primeiro) primeiro.focus();
+      var primeiro = menu.querySelector('button, a'); if (primeiro) primeiro.focus();
     }
+    RF.emitir('menu', true);
   }
   function fecharMenu(peloVoltar) {
     if (!d.body.classList.contains('rf-menu-aberto')) return;
     d.body.classList.remove('rf-menu-aberto');
     d.getElementById('rf-bt-menu').setAttribute('aria-expanded', 'false');
-    if (!peloVoltar && raiz.innerWidth < 1100 && raiz.history.state && raiz.history.state.rfMenu) { ui._ignorarPop = true; raiz.history.back(); }
+    if (!peloVoltar && raiz.innerWidth < LARGO && raiz.history.state && raiz.history.state.rfMenu) { ui._ignorarPop = true; raiz.history.back(); }
+    if (raiz.innerWidth < LARGO) { try { d.getElementById('rf-bt-menu').focus({ preventScroll: true }); } catch (e) {} }
+    RF.emitir('menu', false);
   }
   raiz.addEventListener('popstate', function () {
-    if (d.body.classList.contains('rf-menu-aberto') && raiz.innerWidth < 1100) fecharMenu(true);
+    if (d.body.classList.contains('rf-menu-aberto') && raiz.innerWidth < LARGO) fecharMenu(true);
   });
-  /* Fechar a gaveta e só então trocar de tela. Antes, o "voltar" que tira
-     a gaveta do histórico chegava depois da troca e desfazia a tela nova
+  /* Fechar a gaveta e só então fazer algo. Antes, o "voltar" que tira a
+     gaveta do histórico chegava depois da troca e desfazia a tela nova
      (acontecia com a janela estreita, ex.: painel lateral do Chrome aberto). */
-  function fecharMenuEIr(modulo) {
+  function fecharMenuE(depois) {
+    if (raiz.innerWidth >= LARGO) return depois();
     var tinhaEntrada = raiz.history.state && raiz.history.state.rfMenu;
     fecharMenu(true);
-    if (tinhaEntrada) ui.voltarEDepois(1, function () { RF.Rota.ir(modulo); });
-    else RF.Rota.ir(modulo);
+    if (tinhaEntrada) ui.voltarEDepois(1, depois);
+    else depois();
   }
+  function fecharMenuEIr(modulo) { fecharMenuE(function () { RF.Rota.ir(modulo); }); }
 
+  /* ---- barra de atalhos (celular): só os favoritos ---- */
+  var FAVORITOS_PADRAO = ['painel', 'suporte', 'usuarios', 'emails', 'publicar'];
   function favoritos() {
     var cfg = C.aberto() ? C.obj('config') : {};
-    var f = (cfg.favoritos && cfg.favoritos.length) ? cfg.favoritos : ['painel', 'usuarios', 'suporte', 'publicar'];
-    return f.filter(function (id) { var m = RF.cat.modulo(id); return m && RF.pode(m.recurso + ':ver'); }).slice(0, 5);
+    var f = (cfg.favoritos && cfg.favoritos.length) ? cfg.favoritos : FAVORITOS_PADRAO;
+    return f.filter(function (id) { var m = RF.cat.modulo(id); return m && !m.oculto && RF.pode(m.recurso + ':ver'); }).slice(0, 5);
   }
+  RF.favoritos = favoritos;
+  RF.FAVORITOS_PADRAO = FAVORITOS_PADRAO;
   function montarBarraBaixo() {
     U.limpar(barraBaixo);
     var rota = RF.Rota.atual();
@@ -387,10 +520,10 @@
   function menuPessoa() {
     var p = S.pessoa, papel = RF.Papeis.achar(p.papel);
     var corpo = el('div', { class: 'rf-lista-acoes' }, [
-      el('p', {}, [el('strong', { texto: p.nome }), el('br'), el('span', { class: 'rf-dica', texto: p.email })]),
-      el('p', {}, [T('Papel: ', 'Role: '), ui.selo(papel ? T(papel.nome) : p.papel, 'neutro')]),
+      el('div', { class: 'rf-pessoa rf-pessoa-grande' }, [el('span', { class: 'rf-avatar', 'aria-hidden': 'true', texto: p.nome.charAt(0) }),
+        el('span', {}, [el('strong', { texto: p.nome }), el('br'), el('span', { class: 'rf-dica', texto: p.email }), el('br'), ui.selo(papel ? T(papel.nome) : p.papel, 'neutro')])]),
       ui.botao('🔒 ' + T('Bloquear agora', 'Lock now'), function () { ui.fecharModal(); setTimeout(S.bloquear, 50); }),
-      ui.botao('⚙ ' + T('Minha segurança (PIN, digital, senha)', 'My security (PIN, fingerprint, password)'), function () { ui.fecharEIr('configuracoes', 'seguranca'); }),
+      ui.botao('🛡 ' + T('Minha segurança (PIN, digital, senha)', 'My security (PIN, fingerprint, password)'), function () { ui.fecharEIr('configuracoes', 'seguranca'); }),
       RF.ehDono() ? ui.botao('🎭 ' + T('Ver como outro papel (teste)', 'View as another role (test)'), function () { ui.fecharModal(); setTimeout(abrirSimulador, 50); }) : null,
       ui.botao('↩ ' + T('Sair', 'Sign out'), function () { ui.fecharModal(); setTimeout(S.sair, 50); }, 'perigo')
     ]);
@@ -412,77 +545,224 @@
   }
 
   /* ------------------------------------------------------------------
-     BUSCA (lupa)
+     BUSCA — um índice só, usado pela lupa 🔍 e pelo AssistONE
      ------------------------------------------------------------------ */
-  function indiceBusca() {
-    var itens = [];
-    modulosVisiveis().forEach(function (m) {
-      itens.push({ tipo: T('Tela', 'Screen'), titulo: T(m.nome), texto: T(m.ajuda), ir: [m.id], icone: m.icone, termos: [m.nome.pt, m.nome.en] });
-    });
-    RF.cat.FUNCOES.forEach(function (f) {
-      var m = RF.cat.modulo(f.modulo);
-      if (!m || !RF.pode(m.recurso + ':ver')) return;
-      itens.push({ tipo: T('Função', 'Feature'), titulo: T(f.nome), texto: T(m.nome) + (f.estado !== 'ativo' ? ' · ' + (f.estado === 'especificar' ? T('a especificar', 'needs spec') : f.estado) : ''),
-        ir: [f.modulo], icone: '·', termos: [f.nome.pt, f.nome.en] });
-    });
-    if (RF.pode('usuarios:ver')) C.lista('usuarios').forEach(function (u) {
-      if (u.status === 'excluido') return;
-      if (!u.apps.some(function (a) { return RF.noEscopo(a.app); }) && u.apps.length) return;
-      var mostra = RF.pode('usuarios.pii:ver') ? u.email : U.mascararEmail(u.email);
-      itens.push({ tipo: T('Usuário', 'User'), titulo: u.nome, texto: u.apelido + ' · ' + mostra, ir: ['usuarios', 'ficha', u.id], icone: '👤',
-        termos: [u.nome, u.apelido].concat(RF.pode('usuarios.pii:ver') ? [u.email] : []) });
-    });
-    if (RF.pode('suporte:ver')) C.lista('chamados').forEach(function (c) {
-      if (!RF.noEscopo(c.app)) return;
-      itens.push({ tipo: T('Chamado', 'Ticket'), titulo: '#' + c.numero + ' ' + c.assunto, texto: T(RF.cat.STATUS_CHAMADO[c.status] || {}), ir: ['suporte', 'chamado', c.id], icone: '🎧',
-        termos: ['#' + c.numero, String(c.numero), c.assunto] });
-    });
-    if (RF.pode('kb:ver')) C.lista('kb').forEach(function (k) {
-      itens.push({ tipo: T('Artigo', 'Article'), titulo: T(k.titulo), texto: k.estado, ir: ['kb', 'artigo', k.id], icone: '📚', termos: [k.titulo.pt, k.titulo.en].concat(k.palavras || []) });
-    });
-    if (RF.pode('apps:ver')) C.lista('apps').forEach(function (a) {
-      itens.push({ tipo: 'App', titulo: T(a.nome), texto: a.url || '', ir: ['apps', 'app', a.id], icone: a.glifo, termos: [a.nome.pt, a.id, a.repo] });
-    });
-    return itens;
-  }
-  function abrirBusca() {
-    var campo = ui.entrada('', { tipo: 'search', attrs: { autofocus: true, 'aria-label': T('O que você procura?', 'What are you looking for?'), placeholder: T('Tela, função, pessoa, chamado #…', 'Screen, feature, person, ticket #…') } });
-    var res = el('div', { class: 'rf-busca-res', 'aria-live': 'polite' });
-    var indice = indiceBusca();
-    function buscar() {
-      U.limpar(res);
-      var q = U.semAcento(campo.value.trim());
-      if (q.length < 2) { res.appendChild(el('p', { class: 'rf-dica', texto: T('Digite pelo menos 2 letras.', 'Type at least 2 letters.') })); return; }
+  var Busca = {
+    indice: function () {
+      var itens = [];
+      modulosVisiveis().forEach(function (m) {
+        itens.push({ tipo: T('Tela', 'Screen'), titulo: T(m.nome), texto: T(m.ajuda), ir: [m.id], icone: m.icone, termos: [m.nome.pt, m.nome.en] });
+        (m.partes || []).forEach(function (p) {
+          itens.push({ tipo: T('Tela', 'Screen'), titulo: T(m.nome) + ' › ' + T(p.nome), texto: '', ir: [m.id, p.sub], icone: m.icone, termos: [p.nome.pt, p.nome.en] });
+        });
+      });
+      RF.cat.FUNCOES.forEach(function (f) {
+        var m = RF.cat.modulo(f.modulo);
+        if (!m || !RF.pode(m.recurso + ':ver')) return;
+        itens.push({ tipo: T('Função', 'Feature'), titulo: T(f.nome), texto: T(m.nome) + (f.estado !== 'ativo' ? ' · ' + (f.estado === 'especificar' ? T('a especificar', 'needs spec') : f.estado) : ''),
+          ir: [f.modulo], icone: '·', termos: [f.nome.pt, f.nome.en] });
+      });
+      itens.push({ tipo: T('Ajuda', 'Help'), titulo: 'AssistONE', texto: T('assistente, ajuda, tour e passo a passo', 'assistant, help, tour and walkthrough'), abrir: function () { if (RF.Assist) RF.Assist.abrir(); },
+        icone: '✨', termos: ['assistone', 'assist one', 'ajuda', 'help', 'clipe', 'ajudante', 'tutorial', 'wizard', 'tour', 'passo a passo'] });
+      if (RF.pode('usuarios:ver')) C.lista('usuarios').forEach(function (u) {
+        if (u.status === 'excluido') return;
+        if (!u.apps.some(function (a) { return RF.noEscopo(a.app); }) && u.apps.length) return;
+        var mostra = RF.pode('usuarios.pii:ver') ? u.email : U.mascararEmail(u.email);
+        itens.push({ tipo: T('Usuário', 'User'), titulo: u.nome, texto: u.apelido + ' · ' + mostra, ir: ['usuarios', 'ficha', u.id], icone: '👤',
+          termos: [u.nome, u.apelido].concat(RF.pode('usuarios.pii:ver') ? [u.email] : []) });
+      });
+      if (RF.pode('suporte:ver')) C.lista('chamados').forEach(function (c) {
+        if (!RF.noEscopo(c.app)) return;
+        itens.push({ tipo: T('Chamado', 'Ticket'), titulo: '#' + c.numero + ' ' + c.assunto, texto: T(RF.cat.STATUS_CHAMADO[c.status] || {}), ir: ['suporte', 'chamado', c.id], icone: '🎧',
+          termos: ['#' + c.numero, String(c.numero), c.assunto] });
+      });
+      if (RF.pode('kb:ver')) C.lista('kb').forEach(function (k) {
+        itens.push({ tipo: T('Artigo', 'Article'), titulo: T(k.titulo), texto: k.estado, ir: ['kb', 'artigo', k.id], icone: '📚', termos: [k.titulo.pt, k.titulo.en].concat(k.palavras || []) });
+      });
+      if (RF.pode('apps:ver')) C.lista('apps').forEach(function (a) {
+        itens.push({ tipo: 'App', titulo: T(a.nome), texto: a.url || '', ir: ['apps', 'app', a.id], icone: a.glifo, termos: [a.nome.pt, a.id, a.repo] });
+      });
+      if (RF.pode('emails:ver')) C.lista('emails').slice(-200).forEach(function (m) {
+        itens.push({ tipo: 'E-mail', titulo: m.assunto || '—', texto: (m.para || '') + ' · ' + (m.status || ''), ir: ['emails', 'saida', m.id], icone: '✉️', termos: [m.assunto, m.para] });
+      });
+      return itens;
+    },
+    /* devolve { achados, sugestoes } — sem acento, sem maiúsculas, PT e EN */
+    procurar: function (q, indice) {
+      indice = indice || Busca.indice();
+      q = U.semAcento(String(q || '').trim());
+      if (q.length < 2) return { achados: [], sugestoes: [], curto: true };
       var achados = indice.filter(function (it) {
         return it.termos.concat([it.titulo]).some(function (t) { return U.semAcento(t).indexOf(q) !== -1; });
       }).slice(0, 40);
+      var sugestoes = [];
       if (!achados.length) {
         var palavras = [];
         indice.forEach(function (it) { it.termos.forEach(function (t) { String(t || '').split(/\s+/).forEach(function (w) { if (w.length > 3) palavras.push(w); }); }); });
-        var sug = palavras.map(function (w) { return { w: w, dist: U.distancia(w.slice(0, Math.max(q.length, 4)), q) }; })
+        sugestoes = palavras.map(function (w) { return { w: w, dist: U.distancia(w.slice(0, Math.max(q.length, 4)), q) }; })
           .filter(function (x) { return x.dist <= 2; }).sort(function (a, b) { return a.dist - b.dist; })
           .map(function (x) { return x.w.toLowerCase(); }).filter(function (w, i, a) { return a.indexOf(w) === i; }).slice(0, 6);
-        res.appendChild(el('p', { texto: T('Nada encontrado para "', 'Nothing found for "') + campo.value + '".' }));
-        if (sug.length) {
-          res.appendChild(el('p', { class: 'rf-dica', texto: T('Você quis dizer:', 'Did you mean:') }));
-          res.appendChild(el('div', { class: 'rf-chips' }, sug.map(function (s) {
-            return ui.botao(s, function () { campo.value = s; buscar(); }, 'chip');
+      }
+      return { achados: achados, sugestoes: sugestoes };
+    },
+    abrirItem: function (it) {
+      if (it.abrir) { ui.fecharEIr(RF.Rota.atual().modulo, RF.Rota.atual().sub, RF.Rota.atual().id); setTimeout(it.abrir, 120); return; }
+      ui.fecharEIr(it.ir[0], it.ir[1], it.ir[2]);
+    },
+    /* lista de resultados (usada pela lupa e pelo balão do AssistONE) */
+    desenhar: function (res, termo, aoEscolher, campo) {
+      var caixa = el('div', { class: 'rf-busca-res', 'aria-live': 'polite' });
+      if (res.curto) { caixa.appendChild(el('p', { class: 'rf-dica', texto: T('Digite pelo menos 2 letras.', 'Type at least 2 letters.') })); return caixa; }
+      if (!res.achados.length) {
+        caixa.appendChild(el('p', { texto: T('Nada encontrado para "', 'Nothing found for "') + termo + '".' }));
+        if (res.sugestoes.length) {
+          caixa.appendChild(el('p', { class: 'rf-dica', texto: T('Você quis dizer:', 'Did you mean:') }));
+          caixa.appendChild(el('div', { class: 'rf-chips' }, res.sugestoes.map(function (s) {
+            return ui.botao(s, function () { if (campo) { campo.value = s; campo.dispatchEvent(new Event('input')); } }, 'chip');
           })));
         }
-        return;
+        return caixa;
       }
-      achados.forEach(function (it) {
+      res.achados.forEach(function (it) {
         var b = el('button', { type: 'button', class: 'rf-busca-item' }, [el('span', { class: 'rf-ic', 'aria-hidden': 'true', texto: it.icone }),
           el('span', {}, [el('strong', { texto: it.titulo }), el('small', { texto: it.tipo + (it.texto ? ' · ' + it.texto : '') })])]);
-        b.onclick = function () { ui.fecharEIr(it.ir[0], it.ir[1], it.ir[2]); };
-        res.appendChild(b);
+        b.onclick = function () { (aoEscolher || Busca.abrirItem)(it); };
+        caixa.appendChild(b);
       });
+      return caixa;
+    }
+  };
+  RF.busca = Busca;
+  function abrirBusca() {
+    var campo = ui.entrada('', { tipo: 'search', attrs: { autofocus: true, 'aria-label': T('O que você procura?', 'What are you looking for?'), placeholder: T('Tela, função, pessoa, chamado #, e-mail…', 'Screen, feature, person, ticket #, e-mail…') } });
+    var zona = el('div');
+    var indice = Busca.indice();
+    function buscar() {
+      U.limpar(zona);
+      zona.appendChild(Busca.desenhar(Busca.procurar(campo.value, indice), campo.value, null, campo));
     }
     campo.addEventListener('input', buscar);
-    ui.modal('🔍 ' + T('Buscar', 'Search'), el('div', {}, [campo, res]), { largo: true });
+    campo.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var p = zona.querySelector('.rf-busca-item'); if (p) p.click(); } });
+    ui.modal('🔍 ' + T('Buscar', 'Search'), el('div', {}, [campo, zona]), { largo: true });
     buscar();
   }
   RF.abrirBusca = abrirBusca;
+
+  /* ------------------------------------------------------------------
+     CAIXA DE ENTRADA 📥 — tudo o que pede a sua atenção, num lugar só.
+     Itens vêm dos dados (prazos, aprovações, publicação, e-mails) e da
+     coleção 'avisos' (automações e sistema). Lido/não lido fica na
+     config deste cofre; a bolha do cabeçalho leva a cor da prioridade
+     mais alta (🔴 urgente, 🟠 importante, 🔵 para saber).
+     ------------------------------------------------------------------ */
+  var PRIO = { urgente: 0, importante: 1, info: 2 };
+  var Inbox = {
+    _cachePub: { em: 0, n: 0 },
+    itens: function () {
+      if (!C.aberto()) return [];
+      var D = RF.dados, lista = [];
+      if (RF.pode('suporte:ver')) D.Chamados.abertos().filter(function (c) { return RF.noEscopo(c.app); }).forEach(function (c) {
+        var s = D.Chamados.situacao(c);
+        if (s === 'estourado') lista.push({ id: 'ch-est:' + c.id, prio: 'urgente', icone: '⛔', quando: c.prazoResposta, titulo: '#' + c.numero + ' ' + c.assunto, texto: T('Prazo estourado · ', 'Deadline missed · ') + D.Chamados.faltaTexto(c), ir: ['suporte', 'chamado', c.id] });
+        else if (s === 'risco') lista.push({ id: 'ch-risco:' + c.id, prio: 'importante', icone: '⚠', quando: c.criadoEm, titulo: '#' + c.numero + ' ' + c.assunto, texto: T('Prazo em risco · ', 'Deadline at risk · ') + D.Chamados.faltaTexto(c), ir: ['suporte', 'chamado', c.id] });
+        else if (c.status === 'novo' && !c.responsavel) lista.push({ id: 'ch-novo:' + c.id, prio: 'info', icone: '🎧', quando: c.criadoEm, titulo: '#' + c.numero + ' ' + c.assunto, texto: T('Chamado novo sem responsável', 'New ticket without an assignee'), ir: ['suporte', 'chamado', c.id] });
+      });
+      if (RF.pode('privacidade:ver')) D.Privacidade.abertos().forEach(function (p) {
+        var dias = D.Privacidade.diasRestantes(p);
+        lista.push({ id: 'lgpd:' + p.id + ':' + (dias <= 3 ? 'u' : dias <= 7 ? 'i' : 'n'), prio: dias <= 3 ? 'urgente' : dias <= 7 ? 'importante' : 'info', icone: '⚖', quando: p.recebidoEm,
+          titulo: p.numero + ' · ' + T(RF.cat.TIPOS_PEDIDO_LGPD[p.tipo] || {}), texto: dias < 0 ? T('Atrasado ', 'Late by ') + (-dias) + T(' dia(s)', ' day(s)') : dias + T(' dia(s) para responder (LGPD)', ' day(s) to answer (LGPD)'), ir: ['privacidade'] });
+      });
+      if (RF.pode('termos:aprovar')) D.Termos.pendentesAprovacao().forEach(function (t) {
+        var v = D.Termos.ultima(t);
+        lista.push({ id: 'termo:' + t.id + ':' + v.versao, prio: 'importante', icone: '📜', quando: v.enviadoEm || v.criadoEm, titulo: T(v.titulo), texto: T('Termo aguardando a sua aprovação', 'Term awaiting your approval'), ir: ['termos', 'termo', t.id] });
+      });
+      if (RF.pode('publicar:ver')) {
+        var agora = Date.now();
+        if (agora - Inbox._cachePub.em > 60000) {   /* gerar os arquivos custa; uma vez por minuto basta */
+          Inbox._cachePub = { em: agora, n: D.diferencas(D.gerarArquivos()).filter(function (x) { return x.situacao !== 'igual'; }).length };
+        }
+        if (Inbox._cachePub.n) lista.push({ id: 'publicar:' + Inbox._cachePub.n, prio: 'info', icone: '🚀', quando: U.agora(), titulo: T('Arquivos para publicar', 'Files to publish'), texto: Inbox._cachePub.n + T(' arquivo(s) com mudança ainda não publicada', ' file(s) with changes not yet published'), ir: ['publicar'] });
+      }
+      if (RF.pode('emails:ver') && RF.Email) RF.Email.aguardando().forEach(function (m) {
+        lista.push({ id: 'email:' + m.id, prio: 'info', icone: '✉️', quando: m.criadoEm, titulo: m.assunto, texto: T('E-mail pronto na caixa de saída para ', 'E-mail ready in the outbox for ') + m.para, ir: ['emails', 'saida', m.id] });
+      });
+      C.lista('avisos').slice(-100).forEach(function (a) {
+        lista.push({ id: 'aviso:' + a.id, prio: a.prio || 'info', icone: a.icone || '⚙', quando: a.quando, titulo: a.titulo, texto: a.texto || '', ir: a.ir || null, arquivavel: true });
+      });
+      var lidos = C.obj('config').inboxLidos || {};
+      lista.forEach(function (i) { i.lido = !!lidos[i.id]; });
+      lista.sort(function (a, b) { return (PRIO[a.prio] - PRIO[b.prio]) || String(b.quando).localeCompare(String(a.quando)); });
+      return lista;
+    },
+    naoLidos: function () { return Inbox.itens().filter(function (i) { return !i.lido; }); },
+    /* aviso gerado pelo sistema/automação: fica guardado para quem não viu na hora */
+    avisar: function (titulo, texto, prio, ir, icone) {
+      if (!C.aberto()) return;
+      var a = { id: U.uid('av-'), quando: U.agora(), titulo: titulo, texto: texto || '', prio: prio || 'info', ir: ir || null, icone: icone || '⚙' };
+      var lista = C.lista('avisos'); lista.push(a);
+      if (lista.length > 300) lista.splice(0, lista.length - 300);
+      C.salvar('avisos').then(atualizarBolha);
+      return a;
+    },
+    marcar: function (id, lido) {
+      var cfg = C.obj('config'); cfg.inboxLidos = cfg.inboxLidos || {};
+      if (lido === false) delete cfg.inboxLidos[id]; else cfg.inboxLidos[id] = U.agora();
+      /* limpa marcações de itens que já não existem (não deixa crescer) */
+      var vivos = {}; Inbox.itens().forEach(function (i) { vivos[i.id] = true; });
+      Object.keys(cfg.inboxLidos).forEach(function (k) { if (!vivos[k]) delete cfg.inboxLidos[k]; });
+      return C.salvar('config').then(atualizarBolha);
+    },
+    marcarTodos: function () {
+      var cfg = C.obj('config'); cfg.inboxLidos = cfg.inboxLidos || {};
+      Inbox.itens().forEach(function (i) { cfg.inboxLidos[i.id] = U.agora(); });
+      return C.salvar('config').then(atualizarBolha);
+    },
+    arquivar: function (id) {
+      C.db.avisos = C.lista('avisos').filter(function (a) { return 'aviso:' + a.id !== id; });
+      return C.salvar('avisos').then(atualizarBolha);
+    }
+  };
+  RF.Inbox = Inbox;
+  function atualizarBolha() {
+    var bt = d.getElementById('rf-bt-inbox'), bolha = d.getElementById('rf-inbox-bolha');
+    if (!bt || !bolha) return;
+    var nl = C.aberto() && S.pessoa ? Inbox.naoLidos() : [];
+    var urg = nl.filter(function (i) { return i.prio === 'urgente'; }).length, imp = nl.filter(function (i) { return i.prio === 'importante'; }).length;
+    bolha.hidden = !nl.length;
+    bolha.textContent = nl.length > 99 ? '99+' : String(nl.length);
+    bolha.className = 'rf-bolha ' + (urg ? 'rf-bolha-urgente' : imp ? 'rf-bolha-importante' : 'rf-bolha-info');
+    bt.setAttribute('aria-label', T('Caixa de entrada', 'Inbox') + (nl.length ? ': ' + nl.length + T(' não lido(s)', ' unread') + (urg ? T(', com urgente', ', with urgent') : '') : ''));
+    try { if (navigator.setAppBadge) { if (nl.length) navigator.setAppBadge(nl.length); else navigator.clearAppBadge(); } } catch (e) {}
+  }
+  RF.atualizarBolha = atualizarBolha;
+
+  RF.telas.inbox = function (area) {
+    var itens = Inbox.itens(), nl = itens.filter(function (i) { return !i.lido; });
+    RF.pagina(area, 'inbox', nl.length ? nl.length + T(' não lido(s)', ' unread') : T('Tudo lido.', 'All read.'), [
+      nl.length ? ui.botao(T('Marcar tudo como lido', 'Mark all as read'), function () { Inbox.marcarTodos().then(renderizar); }, 'p') : null
+    ]);
+    if (!itens.length) { area.appendChild(el('div', { class: 'rf-vazio' }, [el('p', { texto: T('Nada pede a sua atenção agora. 🎉', 'Nothing needs your attention right now. 🎉') })])); return; }
+    var titulos = { urgente: ['🔴', T('Urgente', 'Urgent')], importante: ['🟠', T('Importante', 'Important')], info: ['🔵', T('Para saber', 'For your information')] };
+    ['urgente', 'importante', 'info'].forEach(function (p) {
+      var grupo = itens.filter(function (i) { return i.prio === p; });
+      if (!grupo.length) return;
+      area.appendChild(el('h2', { class: 'rf-inbox-faixa', texto: titulos[p][0] + ' ' + titulos[p][1] + ' · ' + grupo.length }));
+      area.appendChild(el('ul', { class: 'rf-inbox' }, grupo.map(function (i) {
+        var abrir = el('button', { type: 'button', class: 'rf-inbox-item' + (i.lido ? ' rf-lido' : '') }, [
+          el('span', { class: 'rf-ic', 'aria-hidden': 'true', texto: i.icone }),
+          el('span', { class: 'rf-inbox-texto' }, [el('strong', { texto: i.titulo }), el('span', { texto: i.texto }), el('small', { class: 'rf-dica', texto: U.data(i.quando, true) })])
+        ]);
+        abrir.onclick = function () {
+          Inbox.marcar(i.id).then(function () { if (i.ir) RF.Rota.ir(i.ir[0], i.ir[1], i.ir[2]); else renderizar(); });
+        };
+        var acoes = el('span', { class: 'rf-inbox-acoes' }, [
+          ui.botao(i.lido ? T('Não lido', 'Unread') : T('Lido', 'Read'), function () { Inbox.marcar(i.id, !i.lido).then(renderizar); }, 'p', { 'aria-label': (i.lido ? T('Marcar como não lido: ', 'Mark as unread: ') : T('Marcar como lido: ', 'Mark as read: ')) + i.titulo }),
+          i.arquivavel ? ui.botao(T('Arquivar', 'Archive'), function () { Inbox.arquivar(i.id).then(renderizar); }, 'p') : null
+        ]);
+        return el('li', {}, [abrir, acoes]);
+      })));
+    });
+  };
 
   /* ------------------------------------------------------------------
      ROTEADOR
@@ -491,9 +771,11 @@
     if (!S.pessoa || !C.aberto()) return;
     var rota = RF.Rota.atual();
     var mod = RF.cat.modulo(rota.modulo) || RF.cat.modulo('painel');
-    montarMenu(); montarBarraBaixo();
+    atualizarMenu(); montarBarraBaixo(); atualizarBolha();
     topoTitulo.textContent = T(mod.nome);
     d.title = T(mod.nome) + ' · RootifyONE';
+    var btInicio = d.getElementById('rf-bt-inicio');
+    if (mod.id === 'painel') btInicio.setAttribute('aria-current', 'page'); else btInicio.removeAttribute('aria-current');
     U.limpar(main);
     if (!RF.pode(mod.recurso + ':ver')) {
       main.appendChild(el('div', { class: 'rf-vazio' }, [el('h1', { texto: '🔒 ' + T('Sem acesso', 'No access') }),
@@ -512,15 +794,16 @@
     }
     main.focus({ preventScroll: true });
     raiz.scrollTo(0, 0);
+    RF.emitir('tela', { modulo: mod.id, sub: rota.sub, id: rota.id });
   }
   RF.renderizar = renderizar;
 
   /* cabeçalho de página padrão, com ajuda do que está na tela */
   RF.pagina = function (area, modId, subtitulo, acoes) {
     var m = RF.cat.modulo(modId);
-    var ajuda = el('button', { type: 'button', class: 'rf-ajuda-bt', 'aria-label': T('Ajuda desta tela', 'Help for this screen'), title: T('Ajuda desta tela', 'Help for this screen') },
+    var ajuda = el('button', { type: 'button', class: 'rf-ajuda-bt', 'aria-label': T('Ajuda desta tela', 'Help for this screen'), title: T('Ajuda desta tela (AssistONE)', 'Help for this screen (AssistONE)') },
       [el('img', { src: 'ajuda-botao.png', alt: '', width: 28, height: 28 })]);
-    ajuda.onclick = function () { ajudaDaTela(m); };
+    ajuda.onclick = function () { if (RF.Assist) RF.Assist.ajudaDaTela(m); else ajudaDaTela(m); };
     area.appendChild(el('div', { class: 'rf-pag-cab' }, [
       el('div', {}, [el('h1', { class: 'rf-pag-tit' }, [el('span', { 'aria-hidden': 'true', texto: m.icone + ' ' }), T(m.nome), ' ',
         m.estado !== 'ativo' ? ui.seloEstado(m.estado) : null]),
@@ -539,6 +822,7 @@
       el('p', { class: 'rf-dica', texto: T('Dica: a lupa 🔍 no topo encontra qualquer tela, função, pessoa ou chamado.', 'Tip: the 🔍 at the top finds any screen, feature, person or ticket.') })
     ]));
   }
+  RF.ajudaDaTela = ajudaDaTela;
 
   /* ------------------------------------------------------------------
      ARRANQUE
@@ -554,23 +838,36 @@
     d.getElementById('rf-bt-menu').onclick = function () {
       var aberto = d.body.classList.contains('rf-menu-aberto');
       if (aberto) fecharMenu(); else abrirMenu();
-      if (raiz.innerWidth >= 1100) U.gravarLocal('menuFechado', aberto);
+      if (raiz.innerWidth >= LARGO) U.gravarLocal('menuFechado', aberto);
     };
     d.getElementById('rf-menu-fundo').onclick = function () { fecharMenu(); };
     d.getElementById('rf-bt-busca').onclick = abrirBusca;
+    d.getElementById('rf-bt-inbox').onclick = function () { RF.Rota.ir('inbox'); };
     d.getElementById('rf-bt-config').onclick = function () { RF.Rota.ir('configuracoes'); };
     d.getElementById('rf-bt-inicio').onclick = function () { RF.Rota.ir('painel'); };
     d.getElementById('rf-bt-pessoa').onclick = menuPessoa;
     d.getElementById('rf-marca').onclick = function () { RF.Rota.ir('painel'); };
     d.getElementById('rf-marca').onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); RF.Rota.ir('painel'); } };
+    var idi = d.getElementById('rf-idioma'); if (idi) { U.limpar(idi); idi.appendChild(seletorIdioma()); }
     d.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && d.body.classList.contains('rf-menu-aberto') && !ui.modaisAbertos()) fecharMenu();
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && S.pessoa) { e.preventDefault(); abrirBusca(); }
     });
-    if (raiz.innerWidth >= 1100 && U.lerLocal('menuFechado', false) !== true) d.body.classList.add('rf-menu-aberto');
+    if (raiz.innerWidth >= LARGO && U.lerLocal('menuFechado', false) !== true) d.body.classList.add('rf-menu-aberto');
+    /* ao alargar/estreitar a janela, a gaveta não pode ficar "presa" aberta no celular */
+    var larguraAntes = raiz.innerWidth;
+    raiz.addEventListener('resize', function () {
+      var agoraLargo = raiz.innerWidth >= LARGO, antesLargo = larguraAntes >= LARGO;
+      larguraAntes = raiz.innerWidth;
+      if (agoraLargo === antesLargo) return;
+      if (agoraLargo) { d.body.classList.toggle('rf-menu-aberto', U.lerLocal('menuFechado', false) !== true); }
+      else d.body.classList.remove('rf-menu-aberto');
+      d.getElementById('rf-bt-menu').setAttribute('aria-expanded', d.body.classList.contains('rf-menu-aberto') ? 'true' : 'false');
+    });
   }
 
   function iniciar() {
+    Aparencia.aplicar();
     montarEsqueleto();
     if (!raiz.crypto || !raiz.crypto.subtle) {
       telaAcesso(el('div', { class: 'rf-form' }, [el('h2', { texto: T('Navegador sem criptografia', 'Browser without cryptography') }),
@@ -578,21 +875,25 @@
       return;
     }
     RF.on('rota', renderizar);
+    RF.on('log', function () { if (S.pessoa) atualizarBolha(); });
     RF.on('bloqueado', function () { U.limpar(main); telaEntrar(T('Tela bloqueada por inatividade ou a pedido. Entre de novo.', 'Screen locked for inactivity or on request. Sign in again.')); });
     RF.on('saiu', function () { U.limpar(main); telaEntrar(); });
     function rotular() {
-      d.getElementById('rf-bt-busca').setAttribute('aria-label', T('Buscar', 'Search'));
+      d.getElementById('rf-bt-busca').setAttribute('aria-label', T('Buscar (Ctrl+K)', 'Search (Ctrl+K)'));
+      d.getElementById('rf-bt-busca').setAttribute('title', T('Buscar · Ctrl+K', 'Search · Ctrl+K'));
+      d.getElementById('rf-bt-busca-rotulo').textContent = T('Buscar…', 'Search…');
       d.getElementById('rf-bt-config').setAttribute('aria-label', T('Configurações', 'Settings'));
       d.getElementById('rf-bt-inicio').setAttribute('aria-label', T('Início', 'Home'));
       d.getElementById('rf-bt-pessoa').setAttribute('aria-label', T('Sua conta', 'Your account'));
       d.getElementById('rf-bt-menu').setAttribute('aria-label', T('Menu com todas as funções', 'Menu with every feature'));
       d.querySelector('.rf-pular').textContent = T('Pular para o conteúdo', 'Skip to content');
       d.documentElement.setAttribute('lang', U.idioma() === 'en' ? 'en' : 'pt-BR');
+      var idi = d.getElementById('rf-idioma'); if (idi) { U.limpar(idi); idi.appendChild(seletorIdioma()); }
     }
     rotular();
     d.addEventListener('dgo:idioma', function () {
       rotular();
-      if (S.pessoa && C.aberto()) { desenharFaixaSim(); renderizar(); }
+      if (S.pessoa && C.aberto()) { desenharFaixaSim(); montarMenu(); renderizar(); }
       else if (!C.equipe().length) telaInstalar(); else telaEntrar();
     });
     if (!C.equipe().length) { telaInstalar(); return; }

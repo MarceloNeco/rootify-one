@@ -7,11 +7,15 @@
 DGO.iniciar({
   app: 'rootify-one',                       /* gaveta de dados: nunca mude */
   nome: { pt: 'RootifyONE', en: 'RootifyONE' },
-  versaoApp: '0.1.10',
+  versaoApp: '0.2.0',
+  fonteCentral: '/solverone-dados/',      /* arquivos master, na mesma origem (solverone.com.br/solverone-dados/) */
   cor: '#34d399',
   corFundoBarra: '#0b1220',
   idiomaPadrao: 'pt',
   idiomaCompartilhado: true,
+  /* o PT|EN do RootifyONE mora no próprio cabeçalho (computador) e no ☰ (celular);
+     e a IA de chat abre pelo AssistONE. Sem anúncio, a faixa do topo não existe. */
+  seletorIdiomaVisivel: false,
 
   /* o RootifyONE não mostra anúncio (nem faixa de anúncio, nem pop-up) */
   anuncios: { ativo: false, arquivo: '', popup: { ativo: false } },
@@ -24,7 +28,7 @@ DGO.iniciar({
 
   ia: {
     ativo: true,
-    botaoNaFaixa: true,
+    botaoNaFaixa: false,
     provedorPadrao: 'openrouter',
     contexto: {
       pt: 'Você ajuda a equipe que administra a plataforma SolverONE no RootifyONE: usuários, chamados de suporte, termos, planos, publicação e LGPD. Responda curto, em português simples. Nunca peça dados pessoais.',
