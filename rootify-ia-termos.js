@@ -174,6 +174,7 @@
 
   function esperar(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
   function explicarErro(e) {
+    if (raiz.DGO && raiz.DGO.ia && raiz.DGO.ia.explicarErro) return raiz.DGO.ia.explicarErro(e);
     var m = (e && e.message) || String(e);
     if (m === 'sem-chave') return T('Falta a chave da IA.', 'The AI key is missing.');
     if (m === 'sem-internet') return T('Sem internet.', 'No internet.');

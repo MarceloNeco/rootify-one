@@ -2,6 +2,21 @@
   "app": "rootify-one",
   "versoes": [
     {
+      "versao": "0.2.5",
+      "data": "2026-09-26",
+      "hora": "12:15:00",
+      "itens": {
+        "pt": [
+          "IA: quando o provedor aposenta um modelo (o Google tirou o gemini-2.0-flash do ar), o app troca sozinho pelo que a chave aceita, guarda a escolha, avisa e tenta de novo. Padrão do Gemini agora é gemini-3.8-flash.",
+          "IA: erros em linguagem de gente e no idioma escolhido (chave recusada, limite atingido, provedor fora do ar, modelo aposentado), sem mensagem crua em inglês. Módulo comum 1.1.3."
+        ],
+        "en": [
+          "AI: when the provider retires a model (Google took gemini-2.0-flash offline), the app switches on its own to one the key accepts, saves the choice, notifies and retries. Gemini default is now gemini-3.8-flash.",
+          "AI: errors in plain words and in the chosen language (key rejected, limit reached, provider down, model retired), no raw English message. Shared module 1.1.3."
+        ]
+      }
+    },
+    {
       "versao": "0.2.4",
       "data": "2026-09-26",
       "hora": "11:40:00",

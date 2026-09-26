@@ -21,7 +21,7 @@
 (function (raiz) {
   'use strict';
 
-  var VERSAO = '1.1.2';
+  var VERSAO = '1.1.3';
   if (raiz.DGO && raiz.DGO.__carregado) { return; }
 
   /* ------------------------------------------------------------------
@@ -4134,7 +4134,7 @@
     gemini: {
       nome: 'Google Gemini', gratis: true, ordem: 1,
       onde: 'https://aistudio.google.com/apikey',
-      modelo: 'gemini-2.0-flash',
+      modelo: 'gemini-3.8-flash',   /* o Google aposenta modelos; se este sair, o app troca sozinho pelo que a chave aceita */
       nota: { pt: 'Plano grátis com limites que o Google mostra no AI Studio. Confira o aviso de privacidade ao criar a chave.',
               en: 'Free plan with limits shown by Google in AI Studio. Check the privacy notice when creating the key.' },
       chamar: function (chave, modelo, sistema, mensagens, limite) {
@@ -4350,7 +4350,67 @@
       var chave = IA.chave(prov);
       if (!chave && prov !== 'personalizado') return Promise.reject(new Error('sem-chave'));
       /* opcoes.limite: tamanho maximo da resposta (textos longos, como termos) */
-      return pr.chamar(chave, modelo, sistema, msgs, opcoes.limite);
+      return pr.chamar(chave, modelo, sistema, msgs, opcoes.limite).catch(function (e) {
+        /* Modelo aposentado pelo provedor (o Google faz isso sem aviso): escolhe outro
+           entre os que a chave aceita, guarda e tenta de novo uma vez. */
+        if (opcoes._semTroca || !IA.modeloSumiu(e) || !pr.listar) throw e;
+        return IA.trocarModeloSozinho(prov, modelo, e).then(function (novo) {
+          if (!novo) throw e;
+          return IA.perguntar(pergunta, Object.assign({}, opcoes, { modelo: novo, _semTroca: true }));
+        });
+      });
+    },
+
+    /* ---- modelo que saiu do ar: detectar, escolher outro, explicar ---- */
+    modeloSumiu: function (e) {
+      var m = String(e && e.message || '');
+      return e && (e.status === 404 || /no longer available|not found|not supported|deprecated|does not exist|is not available|unsupported model|decommissioned/i.test(m));
+    },
+    /* preferido: o que o proprio provedor sugeriu na mensagem de erro (ex.: "use models/gemini-3.8-flash");
+       senao, o "flash"/"mini"/"small" mais novo da lista (gratis primeiro); senao, o primeiro da lista */
+    escolherModelo: function (lista, sugerido, atual) {
+      var ids = lista.map(function (m) { return m.id; }).filter(function (id) { return id !== atual; });
+      if (sugerido && ids.indexOf(sugerido) !== -1) return sugerido;
+      if (sugerido && !lista.length) return sugerido;
+      function nota(id) {
+        var n = 0; if (/flash|mini|small|haiku|lite/i.test(id)) n += 100; if (/preview|exp|beta/i.test(id)) n -= 30; if (/tts|image|embedding|audio|vision|thinking/i.test(id)) n -= 200;
+        var v = /(\d+)(?:\.(\d+))?/.exec(id); if (v) n += (+v[1]) * 10 + (+(v[2] || 0)); return n;
+      }
+      var gratis = lista.filter(function (m) { return m.gratis && m.id !== atual; });
+      var base = (gratis.length ? gratis : lista.filter(function (m) { return m.id !== atual; })).slice().sort(function (a, b) { return nota(b.id) - nota(a.id); });
+      return base.length ? base[0].id : '';
+    },
+    trocarModeloSozinho: function (prov, atual, e) {
+      var sug = /models\/([a-z0-9._-]+)/i.exec(String(e && e.message || ''));
+      var sugerido = sug ? sug[1] : '';
+      return IA.listarModelos(prov).catch(function () { return []; }).then(function (lista) {
+        var novo = IA.escolherModelo(lista, sugerido, atual);
+        if (!novo || novo === atual) return '';
+        IA.definirModelo(prov, novo);
+        IA._ultimaTroca = { provedor: prov, de: atual, para: novo, quando: Date.now() };
+        try { d.dispatchEvent(new CustomEvent('dgo:ia-modelo', { detail: { provedor: prov, de: atual, para: novo } })); } catch (e2) {}
+        return novo;
+      });
+    },
+    /* erro da IA em linguagem de gente, no idioma da pessoa (nunca a mensagem crua em ingles) */
+    explicarErro: function (e) {
+      var en = Idioma.atual === 'en', m = String(e && e.message || e || ''), st = e && e.status;
+      function T2(pt, en2) { return en ? en2 : pt; }
+      if (m === 'sem-chave') return T2('Falta a chave da IA. Abra o cofre de chaves e cole uma grátis.', 'The AI key is missing. Open the key vault and paste a free one.');
+      if (m === 'sem-internet') return T2('Sem internet.', 'No internet.');
+      if (m === 'so-wifi') return T2('A IA está marcada para usar só no Wi-Fi (Configurações → Rede).', 'AI is set to Wi-Fi only (Settings → Network).');
+      if (m === 'provedor-desconhecido') return T2('Provedor de IA desconhecido.', 'Unknown AI provider.');
+      if (IA.modeloSumiu(e)) {
+        var mod = /models\/([a-z0-9._-]+)/i.exec(m) || /model\s+[“"']?([a-z0-9._-]+)/i.exec(m), qual = mod ? mod[1] : '';
+        return T2('O modelo ' + (qual ? '“' + qual + '” ' : '') + 'foi aposentado pelo provedor e não achei outro para trocar sozinho. Abra o cofre de chaves e toque em “Ver modelos que esta chave aceita”.',
+                  'The model ' + (qual ? '“' + qual + '” ' : '') + 'was retired by the provider and I could not find another to switch to on my own. Open the key vault and tap “See models this key accepts”.');
+      }
+      if (st === 401 || st === 403) return T2('A chave foi recusada pelo provedor. Confira no cofre de chaves (pode ter vencido ou sido apagada).', 'The provider rejected the key. Check the key vault (it may have expired or been deleted).');
+      if (st === 429) return T2('Limite de pedidos da IA atingido por agora. Espere um pouco ou use outra IA.', 'AI request limit reached for now. Wait a bit or use another AI.');
+      if (st === 400) return T2('O provedor recusou o pedido (' + m.slice(0, 120) + ').', 'The provider refused the request (' + m.slice(0, 120) + ').');
+      if (st >= 500) return T2('O provedor de IA está fora do ar ou sobrecarregado. Tente de novo em instantes.', 'The AI provider is down or overloaded. Try again in a moment.');
+      if (/fetch|network|failed to fetch/i.test(m)) return T2('Não deu para falar com o provedor: rede, bloqueio do navegador ou endereço errado.', 'Could not reach the provider: network, browser block or wrong address.');
+      return T2('A IA não respondeu: ', 'The AI did not answer: ') + m.slice(0, 160);
     },
 
     limparConversa: function () { IA._conversa = []; }
@@ -5250,6 +5310,8 @@
       modelo: function (prov) { return IA.modelo(prov); },
       definirModelo: function (prov, m) { return IA.definirModelo(prov, m); },
       listarModelos: function (prov) { return IA.listarModelos(prov); },
+      explicarErro: function (e) { return IA.explicarErro(e); },
+      ultimaTrocaDeModelo: function () { return IA._ultimaTroca || null; },
       definirEndereco: function (prov, url) { return IA.definirBase(prov, url); },
       limpar: function () { return IA.limparConversa(); },
       set cofreBackend(b2) { IA.cofreBackend = b2; },

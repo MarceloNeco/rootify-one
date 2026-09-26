@@ -1154,7 +1154,7 @@
         caixa.value = (caixa.value ? caixa.value + '\n\n' : '') + txt.trim();
         RF.Log.registrar('suporte', 'ia-sugestao', ch.id, null, null, T('Sugestão de IA pedida para #', 'AI suggestion requested for #') + ch.numero);
         caixa.focus();
-      }).catch(function (e) { ui.aviso(T('A IA não respondeu: ', 'The AI did not answer: ') + (e && e.message), 'erro'); });
+      }).catch(function (e) { ui.aviso(raiz.DGO.ia.explicarErro ? raiz.DGO.ia.explicarErro(e) : T('A IA não respondeu: ', 'The AI did not answer: ') + (e && e.message), 'erro'); });
     });
   }
   function idiomaCliente(ch) { var u = ch.usuario && H.usuario(ch.usuario); return u ? u.idioma : 'pt'; }
