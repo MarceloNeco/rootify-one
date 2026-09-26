@@ -40,7 +40,7 @@
     if (!C.aberto()) return;
     var cat = RF.cat, cfg = C.obj('config');
     if (!cfg.recursosSemeados) {
-      var rec = C.lista('recursos'), comp = C.lista('comportamentos'), con = C.lista('conteudo');
+      var rec = C.lista('recursos'), comp = C.lista('comportamentos'), con = C.lista('colecoes');
       (cat.RECURSOS_INICIAIS || []).forEach(function (r) { if (!rec.some(function (x) { return x.app === r.app && x.id === r.id; })) rec.push(Object.assign({ atualizadoEm: U.agora() }, U.clonar(r))); });
       (cat.COMPORTAMENTOS_INICIAIS || []).forEach(function (r) { if (!comp.some(function (x) { return x.app === r.app && x.id === r.id; })) comp.push(Object.assign({ atualizadoEm: U.agora() }, U.clonar(r))); });
       (cat.CONTEUDO_INICIAL || []).forEach(function (c) {
@@ -49,7 +49,7 @@
         con.push(y);
       });
       cfg.recursosSemeados = true;
-      C.salvar('recursos'); C.salvar('comportamentos'); C.salvar('conteudo'); C.salvar('config');
+      C.salvar('recursos'); C.salvar('comportamentos'); C.salvar('colecoes'); C.salvar('config');
     }
   }
   function appsDisponiveis() {
@@ -59,7 +59,7 @@
   }
   function recursosDe(app) { return C.lista('recursos').filter(function (r) { return r.app === app; }); }
   function comportamentosDe(app) { return C.lista('comportamentos').filter(function (r) { return r.app === app; }); }
-  function colecoesDe(app) { return C.lista('conteudo').filter(function (r) { return r.app === app; }); }
+  function colecoesDe(app) { return C.lista('colecoes').filter(function (r) { return r.app === app; }); }
   function colecao(app, id) { return colecoesDe(app).filter(function (c) { return c.id === id; })[0] || null; }
   function slug(s) { return U.semAcento(String(s || '')).replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); }
   function youtubeId(s) {
@@ -271,9 +271,15 @@
     var cols = colecoesDe(app);
     var aberta = colecaoAberta && colecao(app, colecaoAberta);
     if (aberta) return telaColecao(area, app, aberta, podeEd);
+    /* conteúdo tipado do app (ex.: aparelhos do RiseONE) tem editor próprio em rootify-conteudo.js */
+    var tipados = RF.Conteudo && RF.Conteudo.tiposDe ? RF.Conteudo.tiposDe(app) : [];
+    if (tipados.length) area.appendChild(el('div', { class: 'rf-cartoes' }, tipados.map(function (t) {
+      var n = C.lista('conteudo').filter(function (x) { return x.app === app && x.tipo === t.id; }).length;
+      return ui.cartao('🧱 ' + (typeof t.nome === 'string' ? t.nome : T(t.nome)), n, T('Editor próprio: texto, foto e vídeos por item → ', 'Own editor: text, photo and videos per item → ') + t.arquivo, function () { RF.Rota.ir('conteudo-apps', app); });
+    })));
     area.appendChild(el('p', { class: 'rf-dica', texto: T('Cada coleção tem campos declarados (texto PT/EN, fotos, vídeos do YouTube, links…) e itens. Vira conteudo/' + (app === '*' ? 'global' : app) + '.json; o app lê ao abrir e mostra sem commit.',
       'Each collection has declared fields (PT/EN text, photos, YouTube videos, links…) and items. Becomes conteudo/' + (app === '*' ? 'global' : app) + '.json; the app reads it when it opens and shows it without a commit.') }));
-    if (!cols.length) area.appendChild(el('div', { class: 'rf-vazio' }, [el('p', { texto: T('Nenhuma coleção de conteúdo neste app ainda.', 'No content collection in this app yet.') })]));
+    if (!cols.length && !tipados.length) area.appendChild(el('div', { class: 'rf-vazio' }, [el('p', { texto: T('Nenhuma coleção de conteúdo neste app ainda.', 'No content collection in this app yet.') })]));
     else area.appendChild(el('div', { class: 'rf-cartoes' }, cols.map(function (c) {
       return ui.cartao(T(c.nome), c.itens.filter(function (i) { return i.ativo !== false; }).length, c.campos.map(function (f) { return T(f.nome); }).slice(0, 4).join(' · ') + (c.campos.length > 4 ? ' …' : ''), function () { colecaoAberta = c.id; RF.renderizar(); });
     })));
@@ -338,8 +344,8 @@
     if (!novo && RF.pode('conteudo:excluir', app)) rod.push(ui.botao(T('Excluir coleção', 'Delete collection'), function () {
       ui.confirmar(T('Excluir coleção', 'Delete collection'), T('Apaga a coleção e os ', 'Deletes the collection and its ') + x.itens.length + T(' itens dela. O log guarda o que existia.', ' items. The log keeps what existed.'), { perigo: true, digitar: x.id, digitarRotulo: T('Digite o identificador: ', 'Type the identifier: ') + x.id }).then(function (ok) {
         if (!ok) return;
-        C.db.conteudo = C.lista('conteudo').filter(function (y) { return !(y.app === app && y.id === x.id); });
-        RF.mudar('conteudo', 'recursos', 'colecao-excluir', app + '/' + x.id, { id: x.id, itens: x.itens.length }, null, T('Coleção excluída: ', 'Collection deleted: ') + x.id).then(function () { colecaoAberta = null; ui.fecharModal(); RF.renderizar(); });
+        C.db.colecoes = C.lista('colecoes').filter(function (y) { return !(y.app === app && y.id === x.id); });
+        RF.mudar('colecoes', 'recursos', 'colecao-excluir', app + '/' + x.id, { id: x.id, itens: x.itens.length }, null, T('Coleção excluída: ', 'Collection deleted: ') + x.id).then(function () { colecaoAberta = null; ui.fecharModal(); RF.renderizar(); });
       });
     }, 'perigo'));
     rod.push(ui.botao(T('Salvar', 'Save'), function () {
@@ -348,8 +354,8 @@
       if (!y.campos.length) return ui.aviso(T('Pelo menos um campo.', 'At least one field.'), 'erro');
       if (y.campos.some(function (f) { return !f.nome.pt || !f.nome.en; })) return ui.aviso(T('Cada campo precisa de nome PT e EN.', 'Each field needs a PT and EN name.'), 'erro');
       if (novo && colecao(app, y.id)) return ui.aviso(T('Já existe uma coleção com esse identificador.', 'A collection with that identifier already exists.'), 'erro');
-      if (novo) C.lista('conteudo').push(y); else C.db.conteudo = C.lista('conteudo').map(function (z) { return z.app === app && z.id === y.id ? y : z; });
-      RF.mudar('conteudo', 'recursos', novo ? 'colecao-criar' : 'colecao-editar', app + '/' + y.id, col ? { campos: col.campos } : null, { campos: y.campos }, T('Coleção salva: ', 'Collection saved: ') + y.id + ' (' + H.nomeApp(app) + ')').then(function () { colecaoAberta = y.id; ui.fecharModal(); RF.renderizar(); });
+      if (novo) C.lista('colecoes').push(y); else C.db.colecoes = C.lista('colecoes').map(function (z) { return z.app === app && z.id === y.id ? y : z; });
+      RF.mudar('colecoes', 'recursos', novo ? 'colecao-criar' : 'colecao-editar', app + '/' + y.id, col ? { campos: col.campos } : null, { campos: y.campos }, T('Coleção salva: ', 'Collection saved: ') + y.id + ' (' + H.nomeApp(app) + ')').then(function () { colecaoAberta = y.id; ui.fecharModal(); RF.renderizar(); });
     }, 'pri'));
     ui.modal((novo ? T('Nova coleção', 'New collection') : T('Campos de ', 'Fields of ') + T(x.nome)) + ' · ' + H.nomeApp(app), el('div', { class: 'rf-form' }, [
       ui.campo(T('Identificador', 'Identifier'), id), nome, desc,
@@ -384,7 +390,7 @@
       ui.confirmar(T('Excluir item', 'Delete item'), tituloItem(col, x), { perigo: true }).then(function (ok) {
         if (!ok) return;
         col.itens = col.itens.filter(function (y) { return y.id !== x.id; });
-        RF.mudar('conteudo', 'recursos', 'item-excluir', app + '/' + col.id + '/' + x.id, it, null, T('Item excluído: ', 'Item deleted: ') + col.id + '/' + x.id).then(function () { ui.fecharModal(); RF.renderizar(); });
+        RF.mudar('colecoes', 'recursos', 'item-excluir', app + '/' + col.id + '/' + x.id, it, null, T('Item excluído: ', 'Item deleted: ') + col.id + '/' + x.id).then(function () { ui.fecharModal(); RF.renderizar(); });
       });
     }, 'perigo'));
     if (podeEd) rod.push(ui.botao(T('Salvar', 'Save'), function () {
@@ -393,7 +399,7 @@
       if (!y.id) return ui.aviso(T('Dê um identificador.', 'Give it an identifier.'), 'erro');
       if (novo && col.itens.some(function (z) { return z.id === y.id; })) return ui.aviso(T('Já existe um item com esse identificador.', 'An item with that identifier already exists.'), 'erro');
       if (novo) col.itens.push(y); else col.itens = col.itens.map(function (z) { return z.id === y.id ? y : z; });
-      RF.mudar('conteudo', 'recursos', novo ? 'item-criar' : 'item-editar', app + '/' + col.id + '/' + y.id, it, y, T('Item salvo: ', 'Item saved: ') + col.id + '/' + y.id + ' (' + H.nomeApp(app) + ')').then(function () { ui.fecharModal(); RF.renderizar(); ui.aviso(T('Salvo. Publique para o app mostrar.', 'Saved. Publish so the app shows it.')); });
+      RF.mudar('colecoes', 'recursos', novo ? 'item-criar' : 'item-editar', app + '/' + col.id + '/' + y.id, it, y, T('Item salvo: ', 'Item saved: ') + col.id + '/' + y.id + ' (' + H.nomeApp(app) + ')').then(function () { ui.fecharModal(); RF.renderizar(); ui.aviso(T('Salvo. Publique para o app mostrar.', 'Saved. Publish so the app shows it.')); });
     }, 'pri'));
     ui.modal((novo ? T('Novo item', 'New item') : tituloItem(col, x)) + ' · ' + T(col.nome), form, { largo: true, rodape: rod });
   }

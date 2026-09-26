@@ -612,7 +612,7 @@
       if (RF.pode('apps:ver')) C.lista('apps').forEach(function (a) {
         itens.push({ tipo: 'App', titulo: T(a.nome), texto: a.url || '', ir: ['apps', 'app', a.id], icone: a.glifo, termos: [a.nome.pt, a.id, a.repo] });
       });
-      if (RF.pode('conteudo:ver') && RF.Recursos) C.lista('conteudo').forEach(function (col) {
+      if (RF.pode('conteudo:ver') && RF.Recursos) C.lista('colecoes').forEach(function (col) {
         col.itens.forEach(function (it) {
           itens.push({ tipo: T('Conteúdo', 'Content'), titulo: RF.Recursos.tituloItem(col, it), texto: T(col.nome) + ' · ' + H_nomeApp(col.app), icone: '🗂', termos: [it.id, RF.Recursos.tituloItem(col, it)],
             abrir: function () { RF.Recursos.abrirColecao(col.app, col.id); } });

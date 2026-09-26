@@ -302,9 +302,7 @@
      acesso — nome, papel e as DEKs embrulhadas. Nenhuma senha.
      Coleções (dentro do cofre, cifradas): todo o resto.
      ------------------------------------------------------------------ */
-  var COLECOES = ['apps', 'planos', 'servicos', 'usuarios', 'segmentos', 'chamados', 'kb', 'termos', 'recados',
-    'anuncios', 'versoes', 'papeis', 'automacoes', 'custos', 'pedidos', 'ropa', 'incidentes', 'consentimentos',
-    'log', 'config', 'publicacoes', 'respostas', 'emails', 'modelosEmail', 'avisos', 'recursos', 'comportamentos', 'conteudo'];
+  var COLECOES = ['apps', 'planos', 'servicos', 'usuarios', 'segmentos', 'chamados', 'kb', 'termos', 'recados', 'anuncios', 'versoes', 'papeis', 'automacoes', 'custos', 'pedidos', 'ropa', 'incidentes', 'consentimentos', 'log', 'config', 'publicacoes', 'respostas', 'emails', 'modelosEmail', 'avisos', 'recursos', 'comportamentos', 'conteudo', 'colecoes'];
 
   var Cofre = {
     dek: null,          /* CryptoKey — só em memória, some ao bloquear */
@@ -1116,7 +1114,7 @@
           if (!r.ok) throw new Error('github-' + r.status);
           return r.json();
         }).then(function (atual) {
-          var corpo = { message: mensagem + ' — ' + a.nome, content: GitHub.b64utf8(a.texto), branch: cfg.ramo || 'main' };
+          var corpo = { message: mensagem + ' — ' + a.nome, content: a.base64 || GitHub.b64utf8(a.texto), branch: cfg.ramo || 'main' };
           if (atual && atual.sha) corpo.sha = atual.sha;
           return fetch(url, { method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, cab), body: JSON.stringify(corpo) });
         }).then(function (r) {
