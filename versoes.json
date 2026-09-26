@@ -2,6 +2,19 @@
   "app": "rootify-one",
   "versoes": [
     {
+      "versao": "0.2.2",
+      "data": "2026-09-26",
+      "hora": "10:45:00",
+      "itens": {
+        "pt": [
+          "Cofre de chaves de IA (módulo comum 1.1.2): aceita as chaves novas do Google Gemini, que começam com “AQ.” em vez de “AIza”. O começo da chave virou só um aviso; quem decide se a chave vale é o teste no provedor."
+        ],
+        "en": [
+          "AI key vault (shared module 1.1.2): accepts the new Google Gemini keys, which start with “AQ.” instead of “AIza”. The key prefix is now only a hint; the provider test decides whether the key is valid."
+        ]
+      }
+    },
+    {
       "versao": "0.2.1",
       "data": "2026-09-26",
       "hora": "10:20:00",

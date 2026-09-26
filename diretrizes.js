@@ -21,7 +21,7 @@
 (function (raiz) {
   'use strict';
 
-  var VERSAO = '1.1.1';
+  var VERSAO = '1.1.2';
   if (raiz.DGO && raiz.DGO.__carregado) { return; }
 
   /* ------------------------------------------------------------------
@@ -4489,7 +4489,7 @@
     X.groq.serve = { pt: 'Melhor opção grátis para voz → texto (Whisper) e respostas instantâneas.', en: 'Best free option for speech → text (Whisper) and instant answers.' };
     X.groq.stt = { url: 'https://api.groq.com/openai/v1/audio/transcriptions', modelo: 'whisper-large-v3-turbo' };
 
-    X.gemini.cap = ['texto', 'stt', 'tts', 'visao']; X.gemini.prefixo = 'AIza';
+    X.gemini.cap = ['texto', 'stt', 'tts', 'visao']; X.gemini.prefixo = ['AIza', 'AQ.'];   /* chaves novas do AI Studio (2026) comecam com AQ. */
     X.gemini.conta = { pt: 'conta Google', en: 'Google account' };
     X.gemini.limite = { pt: 'Grátis (AI Studio): centenas de pedidos por dia no Flash e Flash-Lite; a cota exata aparece na sua conta. Sem cartão. A voz (TTS) e a leitura de imagens também entram no grátis.',
                         en: 'Free (AI Studio): hundreds of requests per day on Flash and Flash-Lite; the exact quota shows in your account. No card. Voice (TTS) and image reading are free too.' };
@@ -4602,9 +4602,17 @@
     if (!valor) return { ok: false, pt: 'Cole a chave.', en: 'Paste the key.' };
     if (/\s/.test(valor)) return { ok: false, pt: 'A chave tem espaço ou quebra de linha no meio: copie de novo, inteira.', en: 'The key has a space or line break inside: copy it again, whole.' };
     if (valor.length < 20) return { ok: false, pt: 'Curta demais: parece que faltou um pedaço.', en: 'Too short: looks like part is missing.' };
-    if (pr && pr.prefixo && valor.indexOf(pr.prefixo) !== 0) return { ok: false, pt: 'Chave do ' + nomeProv(pr) + ' começa com “' + pr.prefixo + '”. Confira se copiou do site certo.', en: nomeProv(pr) + ' keys start with “' + pr.prefixo + '”. Check you copied from the right site.' };
+    /* Prefixo e so uma dica: os provedores mudam o formato (o Gemini passou de AIza para AQ.
+       em 2026). Se nao bater, avisa mas deixa salvar - quem decide e o teste no provedor. */
+    var prefs = prefixos(pr);
+    if (prefs.length && !prefs.some(function (x) { return valor.indexOf(x) === 0; })) {
+      return { ok: true, aviso: { pt: 'Chave do ' + nomeProv(pr) + ' costuma começar com “' + prefs.join('” ou “') + '”. Vou testar mesmo assim.',
+                                  en: nomeProv(pr) + ' keys usually start with “' + prefs.join('” or “') + '”. Testing anyway.' } };
+    }
     return { ok: true };
   }
+  function prefixos(pr) { if (!pr || !pr.prefixo) return []; return Array.isArray(pr.prefixo) ? pr.prefixo : [pr.prefixo]; }
+  function prefixoTxt(pr) { return prefixos(pr)[0] || ''; }
   function nomeProv(pr) { return typeof pr.nome === 'string' ? pr.nome : (pr.nome[Idioma.atual] || pr.nome.pt); }
   function testarChave(prov, chave) {
     var pr = PROVEDORES[prov];
@@ -4651,12 +4659,12 @@
         '<circle cx="204" cy="87" r="16" fill="none" stroke="#f59e0b" stroke-width="3"/>';
     } else if (tipo === 'copiar') {
       miolo = '<text x="24" y="50" font-size="11" fill="#94a3b8">' + esc(t('suaChave')) + '</text>' +
-        '<rect x="24" y="60" width="150" height="30" rx="7" fill="#0b1220" stroke="#334155"/><text x="34" y="80" font-size="12" font-family="monospace" fill="#e2e8f0">' + esc((pr.prefixo || 'sk-') + '••••••••') + '</text>' +
+        '<rect x="24" y="60" width="150" height="30" rx="7" fill="#0b1220" stroke="#334155"/><text x="34" y="80" font-size="12" font-family="monospace" fill="#e2e8f0">' + esc((prefixoTxt(pr) || 'sk-') + '••••••••') + '</text>' +
         '<rect x="182" y="60" width="34" height="30" rx="7" fill="' + cor + '"/><text x="199" y="81" font-size="15" text-anchor="middle" fill="#04121f">⎘</text>' +
         '<circle cx="199" cy="75" r="20" fill="none" stroke="#f59e0b" stroke-width="3"/><text x="120" y="120" font-size="11" text-anchor="middle" fill="#fbbf24">' + esc(t('umaVez')) + '</text>';
     } else if (tipo === 'colar') {
       miolo = '<text x="24" y="50" font-size="11" fill="#94a3b8">' + esc(nomeApp()) + ' → ' + esc(t('cofreChaves')) + '</text>' +
-        '<rect x="24" y="60" width="192" height="30" rx="7" fill="#0b1220" stroke="' + cor + '" stroke-width="2"/><text x="34" y="80" font-size="12" font-family="monospace" fill="#e2e8f0">' + esc((pr.prefixo || 'sk-') + '••••••••••••') + '</text>' +
+        '<rect x="24" y="60" width="192" height="30" rx="7" fill="#0b1220" stroke="' + cor + '" stroke-width="2"/><text x="34" y="80" font-size="12" font-family="monospace" fill="#e2e8f0">' + esc((prefixoTxt(pr) || 'sk-') + '••••••••••••') + '</text>' +
         '<rect x="24" y="100" width="192" height="28" rx="7" fill="' + cor + '"/><text x="120" y="118" font-size="12" font-weight="700" text-anchor="middle" fill="#04121f">' + esc(t('salvarTestar')) + '</text>';
     } else {
       miolo = '<text x="120" y="88" font-size="30" text-anchor="middle">⚙️</text>';
@@ -4810,7 +4818,7 @@
             corpo.appendChild(cB);
           }
           var cK = campo(t('chave') + ' — ' + nomeProv(pr), { type: 'password', autocomplete: 'off', spellcheck: 'false', autocapitalize: 'none',
-            placeholder: IA.chave(p) ? '••••••••' : (pr.prefixo ? pr.prefixo + '…' : '') });
+            placeholder: IA.chave(p) ? '••••••••' : (prefixoTxt(pr) ? prefixoTxt(pr) + '…' : '') });
           cK._input.value = IA.chave(p);
           var olho = el('button', { type: 'button', class: 'dgo-olho', 'aria-label': t('mostrarChave'), texto: '👁', onclick: function () {
             cK._input.type = cK._input.type === 'password' ? 'text' : 'password'; } });
@@ -4834,6 +4842,7 @@
             var chk = chaveParece(p, valor);
             msg.innerHTML = '';
             if (!chk.ok && !(p === 'personalizado' && !valor)) { msg.appendChild(aviso(chk[Idioma.atual] || chk.pt, 'erro')); return; }
+            if (chk.aviso) msg.appendChild(aviso(chk.aviso[Idioma.atual] || chk.aviso.pt, 'info'));
             IA.definirChave(p, valor);
             if (cM) IA.definirModelo(p, cM._input.value.trim());
             if ((pr.cap || []).indexOf('texto') !== -1 && IA.temChave(p) && !IA.provedoresProntos().filter(function (x) { return x !== p; }).length) IA.definirProvedor(p);

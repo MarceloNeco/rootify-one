@@ -7,7 +7,7 @@
 DGO.iniciar({
   app: 'rootify-one',                       /* gaveta de dados: nunca mude */
   nome: { pt: 'RootifyONE', en: 'RootifyONE' },
-  versaoApp: '0.2.1',
+  versaoApp: '0.2.2',
   fonteCentral: '/solverone-dados/',      /* arquivos master, na mesma origem (solverone.com.br/solverone-dados/) */
   cor: '#34d399',
   corFundoBarra: '#0b1220',
