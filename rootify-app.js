@@ -589,6 +589,8 @@
         itens.push({ tipo: T('Função', 'Feature'), titulo: T(f.nome), texto: T(m.nome) + (f.estado !== 'ativo' ? ' · ' + (f.estado === 'especificar' ? T('a especificar', 'needs spec') : f.estado) : ''),
           ir: [f.modulo], icone: '·', termos: [f.nome.pt, f.nome.en] });
       });
+      itens.push({ tipo: T('Configurações', 'Settings'), titulo: '✨ ' + T('IA: chaves, cofre e chat', 'AI: keys, vault and chat'), texto: T('Configurações › IA', 'Settings › AI'), ir: ['configuracoes', 'ia'], icone: '✨',
+        termos: ['ia', 'ai', 'inteligencia artificial', 'chave', 'chaves', 'api key', 'cofre', 'gemini', 'groq', 'openrouter', 'openai', 'chat', 'perguntar'] });
       itens.push({ tipo: T('Ajuda', 'Help'), titulo: 'AssistONE', texto: T('assistente, ajuda, tour e passo a passo', 'assistant, help, tour and walkthrough'), abrir: function () { if (RF.Assist) RF.Assist.abrir(); },
         icone: '✨', termos: ['assistone', 'assist one', 'ajuda', 'help', 'clipe', 'ajudante', 'tutorial', 'wizard', 'tour', 'passo a passo'] });
       if (RF.pode('usuarios:ver')) C.lista('usuarios').forEach(function (u) {

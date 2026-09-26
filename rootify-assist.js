@@ -74,7 +74,7 @@
     armazenamento: { frase: N('Cotas por plano e quanto espaço este aparelho usa.', 'Quotas per plan and how much space this device uses.'), atalhos: [] },
     mapa: { frase: N('Tudo o que está em cinza, com a pergunta que falta responder. Exporte para a planilha de diretrizes.', 'Everything grey, with the question still to answer. Export to the guidelines spreadsheet.'), atalhos: [] },
     configuracoes: { frase: N('Idioma, aparência, AssistONE, segurança de acesso, barra de atalhos, cópia de segurança e novidades.', 'Language, appearance, AssistONE, access security, shortcut bar, backup and what\'s new.'),
-      atalhos: [{ r: N('🛡 Minha segurança', '🛡 My security'), f: ir('configuracoes', 'seguranca') }, { r: N('⭐ Barra de atalhos', '⭐ Shortcut bar'), f: ir('configuracoes', 'barra') }] }
+      atalhos: [{ r: N('✨ IA: chaves e chat', '✨ AI: keys and chat'), f: ir('configuracoes', 'ia') }, { r: N('🛡 Minha segurança', '🛡 My security'), f: ir('configuracoes', 'seguranca') }, { r: N('⭐ Barra de atalhos', '⭐ Shortcut bar'), f: ir('configuracoes', 'barra') }] }
   };
 
   /* ------------------------------------------------------------------

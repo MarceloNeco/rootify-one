@@ -2,6 +2,19 @@
   "app": "rootify-one",
   "versoes": [
     {
+      "versao": "0.2.4",
+      "data": "2026-09-26",
+      "hora": "11:40:00",
+      "itens": {
+        "pt": [
+          "⚙️ Configurações ganhou a aba ✨ IA: o que está em uso (texto, voz → texto, texto → voz, imagens), cofre de chaves com guia, chat com a IA, rede e política de chaves — tudo num lugar só. Antes ficava só no ✨ da faixa do módulo comum."
+        ],
+        "en": [
+          "⚙️ Settings gained the ✨ AI tab: what is in use (text, speech → text, text → speech, images), key vault with guide, AI chat, network and key policy — all in one place. It used to live only in the ✨ of the shared module strip."
+        ]
+      }
+    },
+    {
       "versao": "0.2.3",
       "data": "2026-09-26",
       "hora": "11:10:00",
