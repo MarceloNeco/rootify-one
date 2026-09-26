@@ -2,6 +2,19 @@
   "app": "rootify-one",
   "versoes": [
     {
+      "versao": "0.2.3",
+      "data": "2026-09-26",
+      "hora": "11:10:00",
+      "itens": {
+        "pt": [
+          "Botão ☀️/🌙 para trocar entre tema claro e escuro com um toque: no cabeçalho (computador), no topo do ☰ (celular) e na tela de entrada. A opção “como o aparelho” continua em ⚙️ → Aparência."
+        ],
+        "en": [
+          "☀️/🌙 button to switch between light and dark theme with one tap: in the header (desktop), at the top of the ☰ (phone) and on the sign-in screen. The “like the device” option stays in ⚙️ → Appearance."
+        ]
+      }
+    },
+    {
       "versao": "0.2.2",
       "data": "2026-09-26",
       "hora": "10:45:00",
