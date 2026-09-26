@@ -490,3 +490,16 @@ tr.rf-clicavel:hover td, tr.rf-clicavel:focus td { background: var(--acento-suav
 @media (min-width: 720px) { .rf-ia-incluir { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .rf-ia-incluir legend { font-weight: 600; padding: 0 .25rem; }
 .rf-hist { margin: 1rem 0; } .rf-hist summary { cursor: pointer; font-weight: 600; padding: .4rem 0; }
+
+/* conteúdo dos apps: miniaturas, foto e vídeos */
+.rf-cont-mini { width: 56px; height: 56px; object-fit: contain; background: #fff; border-radius: 8px; border: 1px solid var(--linha); display: inline-block; }
+.rf-cont-sem { display: inline-flex; align-items: center; justify-content: center; color: var(--txt2); background: var(--sup); }
+.rf-cont-preview { max-width: 100%; max-height: 260px; object-fit: contain; background: #fff; border-radius: var(--raio-p); border: 1px solid var(--linha); display: block; margin-bottom: .5rem; }
+.rf-cont-grupos { display: flex; flex-wrap: wrap; gap: .4rem .9rem; }
+.rf-cont-videos { display: flex; flex-direction: column; gap: .5rem; }
+.rf-cont-video { display: flex; gap: .6rem; align-items: center; border: 1px solid var(--linha); border-radius: var(--raio-p); padding: .4rem .5rem; }
+.rf-cont-video img { width: 80px; height: 60px; object-fit: cover; border-radius: 6px; flex-shrink: 0; }
+.rf-cont-video-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.rf-cont-video-t small { color: var(--txt2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rf-cont-video-add { display: grid; gap: .5rem; grid-template-columns: 1fr; }
+@media (min-width: 720px) { .rf-cont-video-add { grid-template-columns: 1fr 2fr auto; align-items: center; } }

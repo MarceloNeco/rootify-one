@@ -468,7 +468,7 @@
       ' ' + ('0' + d.getHours()).slice(-2) + 'h' + ('0' + d.getMinutes()).slice(-2) + 'm';
   }
   function registrarPublicacao(via, arquivos, commits, restaurouDe) {
-    var snap = {}; arquivos.forEach(function (a) { snap[a.nome] = a.texto; });
+    var snap = {}; arquivos.forEach(function (a) { snap[a.nome] = a.texto; });   /* fotos entram só como marcador (a.texto), nunca o base64 */
     var p = { id: U.uid('pub-'), quando: U.agora(), quem: S.pessoa.email, via: via, commits: commits || [], snapshot: snap, restaurouDe: restaurouDe || null };
     C.lista('publicacoes').push(p);
     if (C.db.publicacoes.length > 20) C.db.publicacoes = C.db.publicacoes.slice(-20);
