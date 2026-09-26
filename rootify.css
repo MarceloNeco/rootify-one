@@ -101,7 +101,13 @@ code, kbd, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, mon
 #rf-topo-tit { color: var(--txt3); font-size: .9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #rf-topo-tit:not(:empty)::before { content: "/ "; color: var(--linha-forte); }
 .rf-topo-acoes { display: flex; gap: .1rem; align-items: center; }
-#rf-idioma { margin-right: .35rem; }
+#rf-idioma { margin-right: .1rem; }
+.rf-bt-tema { min-width: 2.75rem; min-height: 2.75rem; border: 0; background: transparent; color: var(--txt); font: inherit; font-size: 1.15rem; border-radius: .65rem; cursor: pointer; transition: background var(--dur), transform var(--dur); }
+.rf-bt-tema:hover { background: var(--sup2); }
+.rf-bt-tema:active { transform: rotate(20deg); }
+#rf-tema { margin-right: .35rem; }
+.rf-menu-idioma { align-items: center; gap: .35rem; }
+.rf-acesso-topo .rf-acoes { gap: .25rem; flex-wrap: nowrap; }
 .rf-busca-rotulo, .rf-busca-kbd { display: none; }
 @media (min-width: 1100px) {
   #rf-bt-busca { font-size: 1rem; color: var(--txt3); background: var(--sup2); border: 1px solid var(--linha); border-radius: 999px; padding: 0 .5rem 0 .75rem; min-width: 15rem; justify-content: flex-start; margin-right: .35rem; }

@@ -31,9 +31,36 @@
       h.classList.toggle('rf-sem-movimento', a.movimento === 'menos');
       var meta = d.querySelector('meta[name="theme-color"]');
       if (meta) meta.setAttribute('content', getComputedStyle(d.body).getPropertyValue('--sup').trim() || '#0b1220');
+      atualizarBotoesTema();
+    },
+    /* tema que está valendo agora: o escolhido, ou o do aparelho quando 'auto' */
+    efetivo: function () {
+      var a = Aparencia.ler();
+      if (a.tema === 'claro' || a.tema === 'escuro') return a.tema;
+      return raiz.matchMedia && raiz.matchMedia('(prefers-color-scheme: dark)').matches ? 'escuro' : 'claro';
+    },
+    alternar: function () {
+      var a = Aparencia.ler(); a.tema = Aparencia.efetivo() === 'escuro' ? 'claro' : 'escuro'; Aparencia.gravar(a);
     }
   };
   RF.Aparencia = Aparencia;
+  /* botão ☀️/🌙: no cabeçalho (computador), no topo do ☰ (celular) e na tela de entrada.
+     Um toque alterna claro ↔ escuro; "como o aparelho" continua em ⚙️ → Aparência. */
+  function botaoTema() {
+    var b = el('button', { type: 'button', class: 'rf-bt-tema' });
+    b.onclick = function () { Aparencia.alternar(); };
+    rotularTema(b);
+    return b;
+  }
+  function rotularTema(b) {
+    var escuro = Aparencia.efetivo() === 'escuro';
+    b.textContent = escuro ? '☀️' : '🌙';
+    b.setAttribute('aria-label', escuro ? T('Mudar para o tema claro', 'Switch to light theme') : T('Mudar para o tema escuro', 'Switch to dark theme'));
+    b.setAttribute('title', b.getAttribute('aria-label'));
+  }
+  function atualizarBotoesTema() { Array.prototype.forEach.call(d.querySelectorAll('.rf-bt-tema'), rotularTema); }
+  if (raiz.matchMedia) { try { raiz.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', atualizarBotoesTema); } catch (e) {} }
+  RF.botaoTema = botaoTema;
 
   /* ------------------------------------------------------------------
      ACESSO
@@ -46,7 +73,7 @@
       el('div', { class: 'rf-acesso-topo' }, [
         el('div', { class: 'rf-marca-grande' }, [el('span', { class: 'rf-logo', 'aria-hidden': 'true', texto: '🌳' }),
           el('div', {}, [el('h1', { texto: 'RootifyONE' }), el('p', { texto: T('Administração central da SolverONE', 'SolverONE central administration') })])]),
-        seletorIdioma('rf-seg-acesso')
+        el('div', { class: 'rf-acoes' }, [seletorIdioma('rf-seg-acesso'), botaoTema()])
       ]),
       conteudo
     ]));
@@ -355,7 +382,7 @@
     var lista = el('div', { class: 'rf-menu-rola' });
 
     /* celular: idioma no topo da gaveta (no computador ele fica no cabeçalho) */
-    lista.appendChild(el('div', { class: 'rf-menu-idioma' }, [seletorIdioma()]));
+    lista.appendChild(el('div', { class: 'rf-menu-idioma' }, [botaoTema(), seletorIdioma()]));
 
     var rapidas = acoesRapidas();
     if (rapidas.length) {
@@ -849,6 +876,7 @@
     d.getElementById('rf-marca').onclick = function () { RF.Rota.ir('painel'); };
     d.getElementById('rf-marca').onkeydown = function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); RF.Rota.ir('painel'); } };
     var idi = d.getElementById('rf-idioma'); if (idi) { U.limpar(idi); idi.appendChild(seletorIdioma()); }
+    var tm = d.getElementById('rf-tema'); if (tm) { U.limpar(tm); tm.appendChild(botaoTema()); }
     d.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && d.body.classList.contains('rf-menu-aberto') && !ui.modaisAbertos()) fecharMenu();
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k' && S.pessoa) { e.preventDefault(); abrirBusca(); }
@@ -889,6 +917,7 @@
       d.querySelector('.rf-pular').textContent = T('Pular para o conteúdo', 'Skip to content');
       d.documentElement.setAttribute('lang', U.idioma() === 'en' ? 'en' : 'pt-BR');
       var idi = d.getElementById('rf-idioma'); if (idi) { U.limpar(idi); idi.appendChild(seletorIdioma()); }
+      atualizarBotoesTema();
     }
     rotular();
     d.addEventListener('dgo:idioma', function () {
