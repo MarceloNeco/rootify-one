@@ -25,6 +25,7 @@ HTML, CSS e JavaScript puros. Sem framework, sem passo de build. Abra e edite.
 | `rootify-telas-2.js` | telas: termos, recados, anúncios, versões, publicar, papéis, equipe, privacidade, auditoria, integrações, automações, financeiro, telemetria, armazenamento, mapa, configurações | sim |
 | `rootify-ia-termos.js` | IA nos termos: botão ✨ do editor e o 🤖 Agente de políticas (usa `DGO.ia`; nunca publica, só escreve rascunhos) | sim |
 | `rootify-email.js` | **E-mails**: remetentes @solverone.com.br, modelos PT/EN, caixa de saída, envio pelo proxy; API `RF.Email.enfileirar/enviar/abrirCliente`; tela `emails` | sim |
+| `rootify-conteudo.js` | **Conteúdo dos apps**: `TIPOS` (o que cada app expõe: hoje `rise-one` › aparelhos), tela `conteudo-apps` (importar do app, editar texto PT/EN, termos, grupos, foto, vídeos do YouTube), `RF.Conteudo.arquivos()` gera `conteudo/<app>/<tipo>.json` + fotos, `RF.Conteudo.conferir()` entra na conferência de Publicar | sim (um app novo = uma entrada em `TIPOS`) |
 | `rootify-assist.js` | **AssistONE**: personagem, balão "Você está em…" com atalhos (mapa `MAPA` por tela), tour, busca no balão, passo a passo (`PASSOS`), dicas, cartão das Configurações | sim (o mapa por tela cresce aqui) |
 | `rootify-app.js` | telas de acesso (instalar, entrar, bloqueio), cabeçalho, menu ☰ (ações rápidas, acordeão), barra de atalhos, busca compartilhada (`RF.busca`), caixa de entrada (`RF.Inbox`), aparência, simulador de papel, roteador | com cuidado |
 | `diretrizes.js` | módulo comum da SolverONE (igual em todos os apps) | **não** — troque pela versão nova quando sair |
@@ -61,7 +62,7 @@ HTML, CSS e JavaScript puros. Sem framework, sem passo de build. Abra e edite.
    (catálogo) com `estado: 'especificar'` e a pergunta em `falta`; na tela use
    `RF.ui.cinza('id')` ou `RF.ui.botaoCinza(rotulo, 'id')`.
 6. **Arquivos master** (`apps.json`, `planos.json`, `servicos/<app>.json`, `termos.json`,
-   `recados.json`, `anuncios.json`, `ajuda.json`, `versoes/<app>.json`) têm o mesmo formato que
+   `recados.json`, `anuncios.json`, `ajuda.json`, `versoes/<app>.json`, `conteudo/<app>/<tipo>.json` e `conteudo/<app>/fotos/`) têm o mesmo formato que
    terão as coleções no Firestore. Mudar o formato = mudar os apps que os leem.
 7. **Todo e-mail sai pela caixa de saída** (`RF.Email.enfileirar`), nunca por `mailto:` solto:
    assim fica registrado, com modelo, remetente certo e envio automático quando houver proxy.
@@ -78,6 +79,7 @@ HTML, CSS e JavaScript puros. Sem framework, sem passo de build. Abra e edite.
   `RF.Email.enfileirar({ modelo, para, nome, dados, origem })` no ponto do evento.
 - **Ajuda do AssistONE para uma tela nova**: entrada em `MAPA` (`rootify-assist.js`) com frase,
   até 3 atalhos e uma dica; passo do onboarding em `PASSOS` se for configuração inicial.
+- **Conteúdo editável de um app novo**: entrada em `TIPOS` (`rootify-conteudo.js`) com `lista`, `arquivo`, `importar` (arquivo de reserva no app) e `grupos`; o app lê o JSON com reserva local.
 - **Uma ação rápida no ☰**: linha em `ACOES_RAPIDAS` (máximo 4 aparecem).
 
 ## Fases

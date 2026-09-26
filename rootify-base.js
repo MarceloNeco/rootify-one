@@ -17,7 +17,7 @@
   var RF = raiz.RF = raiz.RF || {};
   var d = document;
   var PREFIXO = 'rootify:v1:';
-  var VERSAO = '0.2.5';
+  var VERSAO = '0.2.6';
   RF.VERSAO = VERSAO;
   RF.telas = RF.telas || {};
   RF.h = RF.h || {};
@@ -1101,7 +1101,7 @@
           if (!r.ok) throw new Error('github-' + r.status);
           return r.json();
         }).then(function (atual) {
-          var corpo = { message: mensagem + ' — ' + a.nome, content: GitHub.b64utf8(a.texto), branch: cfg.ramo || 'main' };
+          var corpo = { message: mensagem + ' — ' + a.nome, content: a.base64 || GitHub.b64utf8(a.texto), branch: cfg.ramo || 'main' };
           if (atual && atual.sha) corpo.sha = atual.sha;
           return fetch(url, { method: 'PUT', headers: Object.assign({ 'Content-Type': 'application/json' }, cab), body: JSON.stringify(corpo) });
         }).then(function (r) {

@@ -242,6 +242,8 @@
         return { versao: v.versao, data: v.data, itens: v.itens };
       }) }) });
     });
+    /* conteúdo dos apps (textos, fotos e vídeos): módulo rootify-conteudo.js */
+    if (RF.Conteudo) arquivos = arquivos.concat(RF.Conteudo.arquivos());
     return arquivos;
   }
 
@@ -278,6 +280,7 @@
       if (v) { bil(v.titulo, T('Termo ', 'Term ') + v.titulo.pt); bil(v.texto, T('Termo ', 'Term ') + v.titulo.pt); }
       if (Termos.ultima(t).estado === 'aprovado') avisos.push(T('Termo aprovado aguardando publicação: ', 'Approved term awaiting publication: ') + Termos.ultima(t).titulo.pt);
     });
+    if (RF.Conteudo) RF.Conteudo.conferir(erros, avisos);
     return { erros: erros, avisos: avisos };
   }
 
@@ -298,6 +301,7 @@
   function leiaMeDados() {
     return '# solverone-dados\n\nArquivos master da plataforma SolverONE, publicados pelo RootifyONE.\n' +
       'Não edite à mão: mude no RootifyONE e publique de novo.\n\n' +
+      '| conteudo/<app>/<tipo>.json | textos, fotos e vídeos do que o app mostra (ex.: aparelhos do RiseONE); fotos em conteudo/<app>/fotos/ |\n' +
       '| Arquivo | O que é |\n|---|---|\n' +
       '| apps.json | catálogo dos apps e versão mínima de cada um |\n' +
       '| planos.json | planos de usuário |\n' +
