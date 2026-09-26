@@ -574,6 +574,7 @@
   /* ------------------------------------------------------------------
      BUSCA — um índice só, usado pela lupa 🔍 e pelo AssistONE
      ------------------------------------------------------------------ */
+  function H_nomeApp(id) { return RF.h && RF.h.nomeApp ? RF.h.nomeApp(id) : id; }
   var Busca = {
     indice: function () {
       var itens = [];
@@ -610,6 +611,12 @@
       });
       if (RF.pode('apps:ver')) C.lista('apps').forEach(function (a) {
         itens.push({ tipo: 'App', titulo: T(a.nome), texto: a.url || '', ir: ['apps', 'app', a.id], icone: a.glifo, termos: [a.nome.pt, a.id, a.repo] });
+      });
+      if (RF.pode('conteudo:ver') && RF.Recursos) C.lista('conteudo').forEach(function (col) {
+        col.itens.forEach(function (it) {
+          itens.push({ tipo: T('Conteúdo', 'Content'), titulo: RF.Recursos.tituloItem(col, it), texto: T(col.nome) + ' · ' + H_nomeApp(col.app), icone: '🗂', termos: [it.id, RF.Recursos.tituloItem(col, it)],
+            abrir: function () { RF.Recursos.abrirColecao(col.app, col.id); } });
+        });
       });
       if (RF.pode('emails:ver')) C.lista('emails').slice(-200).forEach(function (m) {
         itens.push({ tipo: 'E-mail', titulo: m.assunto || '—', texto: (m.para || '') + ' · ' + (m.status || ''), ir: ['emails', 'saida', m.id], icone: '✉️', termos: [m.assunto, m.para] });

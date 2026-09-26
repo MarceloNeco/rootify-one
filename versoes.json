@@ -2,6 +2,25 @@
   "app": "rootify-one",
   "versoes": [
     {
+      "versao": "0.3.0",
+      "data": "2026-09-26",
+      "hora": "14:30:00",
+      "itens": {
+        "pt": [
+          "🎛️ Novo módulo Recursos e conteúdo por app (Produto): para cada app (e o Global), ligar/desligar funções (feature flags), ajustar comportamentos (número, texto, sim/não, lista, cor, JSON) e editar conteúdo em coleções com campos declarados (texto PT/EN, fotos, vídeos do YouTube, links). App novo em Apps já aparece aqui.",
+          "Fotos sobem direto para o solverone-dados pelo token do GitHub (reduzidas a 1280 px), sem commit à mão; vídeos por link do YouTube (youtu.be, watch?v=, shorts).",
+          "RiseONE: coleção Equipamentos já vem com os 52 aparelhos do app (nome PT/EN) para receber descrição, fotos, vídeos, dicas e links.",
+          "Publicar gera recursos/<app>.json, conteudo/<app>.json (e os globais). Módulo comum 1.2.0: DGO.recursos.ligado/valor e DGO.conteudo.colecao/item leem esses arquivos ao abrir, com cópia local de reserva."
+        ],
+        "en": [
+          "🎛️ New Features and content by app module (Product): for each app (and Global), turn features on/off (feature flags), adjust behaviours (number, text, yes/no, list, colour, JSON) and edit content in collections with declared fields (PT/EN text, photos, YouTube videos, links). A new app in Apps shows up here right away.",
+          "Photos go straight to solverone-dados through the GitHub token (shrunk to 1280 px), no manual commit; videos by YouTube link (youtu.be, watch?v=, shorts).",
+          "RiseONE: the Equipment collection ships with the app's 52 machines (PT/EN name) ready for description, photos, videos, tips and links.",
+          "Publish generates recursos/<app>.json, conteudo/<app>.json (and the global ones). Shared module 1.2.0: DGO.recursos.ligado/valor and DGO.conteudo.colecao/item read those files on open, with a local copy as fallback."
+        ]
+      }
+    },
+    {
       "versao": "0.2.5",
       "data": "2026-09-26",
       "hora": "12:15:00",
