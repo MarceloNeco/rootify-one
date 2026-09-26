@@ -145,7 +145,7 @@
       nome: N('O que falta especificar', 'What still needs a spec'),
       ajuda: N('Tudo o que está em cinza, com a pergunta que falta responder. Dá para exportar para a planilha de diretrizes.',
                'Everything that is grey, with the question still to answer. It can be exported to the guidelines spreadsheet.') },
-    { id: 'configuracoes', grupo: 'plataforma', icone: '⚙', recurso: 'configuracoes', estado: 'ativo',
+    { id: 'configuracoes', grupo: 'plataforma', icone: '⚙️', recurso: 'configuracoes', estado: 'ativo',
       nome: N('Configurações', 'Settings'),
       partes: [{ sub: 'geral', nome: N('Geral e aparência', 'General and appearance') }, { sub: 'seguranca', nome: N('Minha segurança', 'My security') }, { sub: 'barra', nome: N('Barra de atalhos', 'Shortcut bar') },
                { sub: 'backup', nome: N('Cópia de segurança', 'Backup') }, { sub: 'sobre', nome: N('Sobre e novidades', 'About and what\'s new') }],

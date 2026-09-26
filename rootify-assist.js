@@ -10,7 +10,7 @@
        algo (mesmo índice da lupa), Ajuda desta tela, Agora não, Desligar;
      · dica curta por tela, uma vez só; passo a passo com progresso,
        Fazer agora / Pular / Continuar depois e retomada;
-     · liga/desliga em ⚙ → Geral, num cartão "ASSIST ONE ATIVADO".
+     · liga/desliga em ⚙️ → Geral, num cartão "ASSIST ONE ATIVADO".
    O balão NÃO entra no histórico (o Voltar do celular segue nas telas).
    Quando o módulo comum (diretrizes.js) trouxer o AssistONE, este arquivo
    passa a delegar para ele; o mapa por tela (MAPA) continua aqui.
@@ -209,7 +209,7 @@
   function desligar() {
     var pr = Pref.ler(); pr.ligado = false; Pref.gravar(pr);
     fechar(); atualizarVisibilidade();
-    ui.aviso(T('AssistONE desligado. Para religar: ⚙ Configurações → Geral.', 'AssistONE off. To turn it back on: ⚙ Settings → General.'), 'info');
+    ui.aviso(T('AssistONE desligado. Para religar: ⚙️ Configurações → Geral.', 'AssistONE off. To turn it back on: ⚙️ Settings → General.'), 'info');
   }
 
   function desenharBusca() {
@@ -263,14 +263,14 @@
   }
 
   /* ------------------------------------------------------------------
-     TOUR: destaca ☰ 🔍 📥 ⚙ 🏠, ações rápidas, barra de baixo e ele mesmo
+     TOUR: destaca ☰ 🔍 📥 ⚙️ 🏠, ações rápidas, barra de baixo e ele mesmo
      ------------------------------------------------------------------ */
   function tour() {
     var passos = [
       { sel: '#rf-bt-menu', t: N('☰ Menu: todas as funções, em grupos, com ações rápidas no topo.', '☰ Menu: every feature, in groups, with quick actions at the top.') },
       { sel: '#rf-bt-busca', t: N('🔍 Busca (Ctrl+K): tela, função, pessoa, chamado, e-mail.', '🔍 Search (Ctrl+K): screen, feature, person, ticket, e-mail.') },
       { sel: '#rf-bt-inbox', t: N('📥 Caixa de entrada: tudo o que pede atenção, com a cor da prioridade mais alta.', '📥 Inbox: everything that needs attention, with the colour of the highest priority.') },
-      { sel: '#rf-bt-config', t: N('⚙ Configurações: idioma, aparência, segurança, barra e cópia de segurança.', '⚙ Settings: language, appearance, security, bar and backup.') },
+      { sel: '#rf-bt-config', t: N('⚙️ Configurações: idioma, aparência, segurança, barra e cópia de segurança.', '⚙️ Settings: language, appearance, security, bar and backup.') },
       { sel: '#rf-bt-inicio', t: N('🏠 Início: sempre no mesmo lugar, em todas as telas.', '🏠 Home: always in the same place, on every screen.') },
       { sel: '#rf-bt-pessoa', t: N('👤 Sua conta: bloquear, sair, sua segurança e "ver como".', '👤 Your account: lock, sign out, your security and "view as".') },
       { sel: '#rf-barra-baixo', t: N('⭐ Barra de atalhos: até 5 telas que você escolhe nas Configurações.', '⭐ Shortcut bar: up to 5 screens you choose in Settings.') },
@@ -324,7 +324,7 @@
   function esconderDica() { clearTimeout(dicaTimer); if (dica) { dica.remove(); dica = null; } }
 
   /* ------------------------------------------------------------------
-     CARTÃO DAS CONFIGURAÇÕES (⚙ → Geral)
+     CARTÃO DAS CONFIGURAÇÕES (⚙️ → Geral)
      ------------------------------------------------------------------ */
   function cartaoConfig() {
     var pr = Pref.ler();
