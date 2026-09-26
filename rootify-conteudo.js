@@ -88,7 +88,7 @@
         lista.forEach(function (it) {
           if (!it || !it.id || jaTem[it.id]) return;
           C.lista('conteudo').push({ id: U.uid('ct-'), app: app, tipo: tipo.id, chave: it.id, nome: it.nome || {}, descricao: it.descricao || {},
-            termos: it.termos || '', grupos: it.grupos || [], foto: it.foto ? { url: it.foto } : null, videos: it.videos || [], ativo: it.ativo !== false, atualizadoEm: agora, origem: 'app' });
+            termos: it.termos || '', busca: it.busca || '', grupos: it.grupos || [], foto: it.foto ? { url: it.foto } : null, videos: it.videos || [], ativo: it.ativo !== false, atualizadoEm: agora, origem: 'app' });
           novos++;
         });
         return RF.mudar('conteudo', 'conteudo-apps', 'importar', app + '/' + tipo.id, null, { novos: novos }, T('Importados do app: ', 'Imported from the app: ') + novos + ' (' + app + ')').then(function () { return novos; });
@@ -166,6 +166,7 @@
     var desc = ui.bilingue(T('O que é, em uma frase simples', 'What it is, in one plain sentence'), x.descricao, { linhas: 2 });
     var chave = ui.entrada(x.chave, { attrs: { placeholder: 'ex.: esteira', disabled: !novo } });
     var termos = ui.entrada(x.termos, { attrs: { placeholder: T('palavras que o povo usa: escada de madeira, peso de mão…', 'everyday words people use') } });
+    var busca = ui.entrada(x.busca, { attrs: { placeholder: T('ex.: banco regulável academia exercícios supino', 'e.g. adjustable bench gym exercises') } });
     var grupos = el('div', { class: 'rf-cont-grupos' }, tipo.grupos.map(function (g) { return ui.marca(g[1], (x.grupos || []).indexOf(g[0]) !== -1, { value: g[0] }); }));
     var ativo = ui.marca(T('Aparece no app', 'Shown in the app'), x.ativo !== false);
 
@@ -212,6 +213,7 @@
     var corpo = el('div', { class: 'rf-form' }, [
       el('div', { class: 'rf-grade-2' }, [ui.campo('id ' + T('(sem acento, sem espaço; não muda depois)', '(no accents or spaces; cannot change later)'), chave), ui.campo(T('Termos de busca', 'Search terms'), termos)]),
       nome, desc,
+      ui.campo(T('Frase de busca no YouTube (PT)', 'YouTube search phrase (PT)'), busca, T('É o que o botão "Buscar vídeos no YouTube" pesquisa. Sem ela: nome + "academia exercícios". Evite frases genéricas ("banco como usar" acha banco de dinheiro).', 'What the "Search videos on YouTube" button searches. Empty: name + gym exercises. Avoid generic phrases.')),
       ui.campo(T('Grupos', 'Groups'), grupos),
       ui.secao(T('Foto', 'Photo'), [fotoBox]),
       ui.secao(T('Vídeos do YouTube', 'YouTube videos'), [vidBox, el('p', { class: 'rf-dica', texto: T('No app, o vídeo só carrega quando a pessoa toca (youtube-nocookie). Confira os direitos do vídeo antes de publicar.', 'In the app the video loads only when tapped (youtube-nocookie). Check the video rights before publishing.') })]),
@@ -225,7 +227,7 @@
           RF.mudar('conteudo', 'conteudo-apps', 'excluir', x.chave, orig, null, T('Item excluído: ', 'Item deleted: ') + x.chave).then(function () { ui.fecharModal(); RF.renderizar(); }); });
     }, 'perigo'));
     if (podeEd) rod.push(ui.botao(T('Salvar', 'Save'), function () {
-      var y = Object.assign({}, x, { nome: nome.valor(), descricao: desc.valor(), termos: termos.value.trim(), ativo: ativo.querySelector('input').checked,
+      var y = Object.assign({}, x, { nome: nome.valor(), descricao: desc.valor(), termos: termos.value.trim(), busca: busca.value.trim(), ativo: ativo.querySelector('input').checked,
         grupos: Array.prototype.map.call(grupos.querySelectorAll('input:checked'), function (i) { return i.value; }), atualizadoEm: U.agora() });
       if (novo) { y.chave = chaveLivre(app, tipo.id, chave.value.trim() || y.nome.pt); }
       if (!y.nome.pt || !y.nome.en) return ui.aviso(T('Nome em PT e EN.', 'Name in PT and EN.'), 'erro');
@@ -255,7 +257,7 @@
             fotos.push({ nome: nome, base64: b64, texto: '[foto ' + ext + ' ' + b64.length + ' bytes base64]' });
             foto = nome;
           } else if (x.foto && x.foto.url) foto = x.foto.url;
-          return { id: x.chave, nome: x.nome, descricao: x.descricao, termos: x.termos || '', grupos: x.grupos || [], foto: foto, videos: (x.videos || []).map(function (v) { return { titulo: v.titulo || '', url: v.url }; }), ativo: x.ativo !== false, atualizadoEm: x.atualizadoEm || null };
+          return { id: x.chave, nome: x.nome, descricao: x.descricao, termos: x.termos || '', busca: x.busca || '', grupos: x.grupos || [], foto: foto, videos: (x.videos || []).map(function (v) { return { titulo: v.titulo || '', url: v.url }; }), ativo: x.ativo !== false, atualizadoEm: x.atualizadoEm || null };
         });
         var o = { formato: 1, geradoEm: hoje, geradoPor: 'RootifyONE ' + RF.VERSAO, app: app, tipo: tipo.id };
         o[tipo.lista] = objs;

@@ -10,13 +10,16 @@
           "🎛️ Novo módulo Recursos e conteúdo por app (Produto): para cada app (e o Global), ligar/desligar funções (feature flags), ajustar comportamentos (número, texto, sim/não, lista, cor, JSON) e editar conteúdo em coleções com campos declarados (texto PT/EN, fotos, vídeos do YouTube, links). App novo em Apps já aparece aqui.",
           "Fotos sobem direto para o solverone-dados pelo token do GitHub (reduzidas a 1280 px), sem commit à mão; vídeos por link do YouTube (youtu.be, watch?v=, shorts).",
           "RiseONE: os aparelhos (texto, foto, vídeos do YouTube) usam o editor próprio de Conteúdo dos apps, agora aberto pela aba Conteúdo do Controle dos apps; recursos videos-youtube, fotos-centrais, espelho, modo-tv e comportamentos descanso.padraoSeg, videos.maxPorAparelho já vêm declarados.",
-          "Publicar gera recursos/<app>.json, conteudo/<app>.json (e os globais). Módulo comum 1.2.0: DGO.recursos.ligado/valor e DGO.conteudo.colecao/item leem esses arquivos ao abrir, com cópia local de reserva."
+          "Publicar gera recursos/<app>.json, conteudo/<app>.json (e os globais). Módulo comum 1.2.0: DGO.recursos.ligado/valor e DGO.conteudo.colecao/item leem esses arquivos ao abrir, com cópia local de reserva.",
+          "Conteúdo dos apps (novo módulo, grupo Conteúdo): texto PT/EN, termos de busca, grupos, foto (enviada pelo navegador, reduzida a 900 px) e vídeos do YouTube de cada aparelho do RiseONE. \"Importar do app\" traz o que o app já tem; Publicar gera conteudo/rise-one/aparelhos.json e sobe as fotos novas em conteudo/rise-one/fotos/. O RiseONE lê na próxima abertura, sem commit. Permissão conteudo:* para admin da plataforma, admin de app (só os apps dele) e Conteúdo e marketing.",
+          "Conteúdo dos apps: campo \"Frase de busca no YouTube\" por item (vai no arquivo master como busca)."
         ],
         "en": [
           "🎛️ New Features and content by app module (Product): for each app (and Global), turn features on/off (feature flags), adjust behaviours (number, text, yes/no, list, colour, JSON) and edit content in collections with declared fields (PT/EN text, photos, YouTube videos, links). A new app in Apps shows up here right away.",
           "Photos go straight to solverone-dados through the GitHub token (shrunk to 1280 px), no manual commit; videos by YouTube link (youtu.be, watch?v=, shorts).",
           "RiseONE: equipment (text, photo, YouTube videos) uses the dedicated App content editor, now opened from the Content tab of App control; features videos-youtube, fotos-centrais, espelho, modo-tv and behaviours descanso.padraoSeg, videos.maxPorAparelho come declared.",
-          "Publish generates recursos/<app>.json, conteudo/<app>.json (and the global ones). Shared module 1.2.0: DGO.recursos.ligado/valor and DGO.conteudo.colecao/item read those files on open, with a local copy as fallback."
+          "Publish generates recursos/<app>.json, conteudo/<app>.json (and the global ones). Shared module 1.2.0: DGO.recursos.ligado/valor and DGO.conteudo.colecao/item read those files on open, with a local copy as fallback.",
+          "App content: \"YouTube search phrase\" field per item (goes to the master file as busca)."
         ]
       }
     },
@@ -26,7 +29,6 @@
       "hora": "16:10:00",
       "itens": {
         "pt": [
-          "Conteúdo dos apps (novo módulo, grupo Conteúdo): texto PT/EN, termos de busca, grupos, foto (enviada pelo navegador, reduzida a 900 px) e vídeos do YouTube de cada aparelho do RiseONE. \"Importar do app\" traz o que o app já tem; Publicar gera conteudo/rise-one/aparelhos.json e sobe as fotos novas em conteudo/rise-one/fotos/. O RiseONE lê na próxima abertura, sem commit. Permissão conteudo:* para admin da plataforma, admin de app (só os apps dele) e Conteúdo e marketing.",
           "Publicar aceita arquivo binário (foto) pela API do GitHub; o histórico guarda só um marcador da foto, não o base64."
         ],
         "en": [
